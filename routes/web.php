@@ -1,5 +1,5 @@
 <?php
-
+use Illuminate\Http\Request;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -14,6 +14,7 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\PerfilClienteController;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\MascotaController;
 
 // Redirigir cuando no hay autenticación
 Route::get('/login', function () {
@@ -212,3 +213,115 @@ Route::put('/cliente/perfil', function () {
 
 // Cambiar contraseña (para empleados y clientes)
 Route::post('/cambiar-contrasena', [AuthController::class, 'cambiarContrasena'])->middleware('auth:sanctum');
+
+
+
+
+// Módulo de Mascotas
+Route::middleware('auth:sanctum')->group(function () {
+    Route::resource('/cliente/mascotas', MascotaController::class);
+    Route::get('/cliente/mascotas/{id}/show', [MascotaController::class, 'show'])->name('mascotas.show');
+    Route::resource('/admin/mascotas', MascotaController::class);
+});
+
+// Rutas para mascotas (cliente)
+Route::prefix('cliente')->middleware('auth:sanctum')->group(function () {
+    Route::get('/mascotas', [MascotaController::class, 'index'])->name('cliente.mascotas.index');
+    Route::get('/mascotas/create', [MascotaController::class, 'create'])->name('cliente.mascotas.create');
+    Route::post('/mascotas', [MascotaController::class, 'store'])->name('cliente.mascotas.store');
+    Route::get('/mascotas/{id}/show', [MascotaController::class, 'show'])->name('cliente.mascotas.show');
+    Route::get('/mascotas/{id}/edit', [MascotaController::class, 'edit'])->name('cliente.mascotas.edit');
+    Route::put('/mascotas/{id}', [MascotaController::class, 'update'])->name('cliente.mascotas.update');
+    Route::delete('/mascotas/{id}', [MascotaController::class, 'destroy'])->name('cliente.mascotas.destroy');
+});
+
+// Rutas para mascotas (admin)
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    Route::get('/mascotas', [MascotaController::class, 'index'])->name('admin.mascotas.index');
+    Route::get('/mascotas/{id}/activate', [MascotaController::class, 'activate'])->name('admin.mascotas.activate');
+});
+// =========================================================
+// MÓDULO DE MASCOTAS (con token por URL)
+// =========================================================
+// Cliente
+Route::get('/cliente/mascotas', function (Request $request) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->index($request);
+})->name('cliente.mascotas.index');
+
+Route::get('/cliente/mascotas/create', function (Request $request) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->create($request);
+})->name('cliente.mascotas.create');
+
+Route::post('/cliente/mascotas', function (Request $request) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->store($request);
+})->name('cliente.mascotas.store');
+
+Route::get('/cliente/mascotas/{id}', function (Request $request, $id) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->show($request, $id);
+})->name('cliente.mascotas.show');
+
+Route::get('/cliente/mascotas/{id}/edit', function (Request $request, $id) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->edit($request, $id);
+})->name('cliente.mascotas.edit');
+
+Route::put('/cliente/mascotas/{id}', function (Request $request, $id) {
+    $token = $request->query('token') ?? $request->input('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->update($request, $id);
+})->name('cliente.mascotas.update');
+
+Route::delete('/cliente/mascotas/{id}', function (Request $request, $id) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->destroy($request, $id);
+})->name('cliente.mascotas.destroy');
+
+// Admin
+Route::get('/admin/mascotas', function (Request $request) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->index($request);
+})->name('admin.mascotas.index');
+
+Route::get('/admin/mascotas/{id}/activate', function (Request $request, $id) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->activate($request, $id);
+})->name('admin.mascotas.activate');

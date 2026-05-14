@@ -15,8 +15,14 @@ class Cliente extends Model
         'direccion'
     ];
 
-    public function usuario()
-    {
-        return $this->belongsTo(Usuario::class, 'id_usuario');
-    }
+ public function usuario()
+{
+    return $this->belongsTo(Usuario::class, 'id_usuario');
+}
+
+public function mascotas()
+{
+    return $this->hasMany(Mascota::class, 'id_cliente');
+}
+    
 }

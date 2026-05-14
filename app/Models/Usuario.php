@@ -127,4 +127,9 @@ public function verificarCodigo2FA($codigo)
     $google2fa = new Google2FA();
     return $google2fa->verifyKey($this->two_factor_secret, $codigo);
 }
+public function mascotas()
+{
+    return $this->hasManyThrough(Mascota::class, Cliente::class, 'id_usuario', 'id_cliente');
+}
+
 }

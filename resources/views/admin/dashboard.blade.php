@@ -19,6 +19,7 @@
             <li> <a href="#" id="enlace2fa">Configurar 2FA (Google Authenticator)</a></li>
             <li> <a href="#" id="enlaceLogs">Ver Logs de Auditoría</a></li>
             <li> <a href="#" id="enlaceClientes">Gestionar Clientes</a></li>
+            <li>🐕 <a href="#" id="enlaceMascotas">Todas las Mascotas</a></li>
         </ul>
         <button onclick="logout()">Cerrar Sesión</button>
     </div>
@@ -50,6 +51,11 @@
         if (enlaceClientes) {
             enlaceClientes.href = '/admin/clientes?token=' + token;
         }
+const enlaceMascotas = document.getElementById('enlaceMascotas');
+if (enlaceMascotas) {
+    enlaceMascotas.href = '/admin/mascotas?token=' + token;
+    console.log('Enlace creado:', enlaceMascotas.href);  // Para ver en consola
+}
         
         // Cargar datos del usuario
         fetch('/api/me', {
