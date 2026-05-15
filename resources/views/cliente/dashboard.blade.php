@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin - Pet Spa</title>
+    <title>Bienvenido - Pet Spa</title>
     <style>
-        body { font-family: Arial; margin: 50px; background: #1a1a2e; }
+        body { font-family: Arial; margin: 50px; background: #fff3e0; }
         .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 10px; }
-        h1 { color: #4CAF50; }
+        h1 { color: #FF9800; }
         button { background: red; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
         .info { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; }
         ul { list-style: none; padding: 0; }
@@ -15,21 +15,25 @@
     </style>
 </head>
 <body>
+    @php
+        $token = request()->query('token');
+    @endphp
+
     <div class="container">
-        <h1>🐾 Panel de Administrador</h1>
+        <h1>🐾 ¡Bienvenido a Pet Spa!</h1>
         <div class="info" id="userInfo">Cargando datos...</div>
         <hr>
-        <h2>Menú Principal</h2>
+        <h2>Tus Servicios</h2>
         <ul>
-            <li>📊 Ver estadísticas</li>
-            <li>👥 <a href="#" id="enlaceEmpleados">Gestionar Empleados</a></li>
-            <li>🐕 <a href="#" id="enlaceMascotas">Todas las Mascotas</a></li>
-            <li>📅 Ver todas las citas</li>
-            <li>💰 Reportes financieros</li>
-            <li>🔐 <a href="#" id="enlace2fa">Configurar 2FA (Google Authenticator)</a></li>
-            <li>📋 <a href="#" id="enlaceLogs">Ver Logs de Auditoría</a></li>
-            <li>👥 <a href="#" id="enlaceClientes">Gestionar Clientes</a></li>
-        </ul>
+            <li>📅 Agendar nueva cita</li>
+            <li>🐕 <a href="#" id="enlaceMascotas">Ver mis mascotas</a></li>
+    
+            <li>📋 Historial de servicios</li>
+            <li>⭐ Calificar atención</li>
+            <li>👤 <a href="#" id="enlacePerfil">Actualizar mis datos</a></li>
+       <li>📅 <a href="#" id="enlaceSolicitarCita">Solicitar Cita</a></li>
+<li>📋 <a href="#" id="enlaceMisCitas">Mis Citas</a></li>
+</ul>
         <button onclick="logout()">Cerrar Sesión</button>
     </div>
 
@@ -40,47 +44,34 @@
             window.location.href = '/';
         }
         
-        // Mostrar token en consola para depuración
-        console.log('Token encontrado:', token);
-        
-        // Crear enlaces con token
-        const enlace2fa = document.getElementById('enlace2fa');
-        if (enlace2fa) {
-            enlace2fa.href = '/admin/configurar-2fa?token=' + token;
-            console.log('Enlace 2FA:', enlace2fa.href);
+        // Crear enlace con token
+        const enlacePerfil = document.getElementById('enlacePerfil');
+        if (enlacePerfil) {
+            enlacePerfil.href = '/cliente/perfil?token=' + token;
         }
-        
-        const enlaceEmpleados = document.getElementById('enlaceEmpleados');
-        if (enlaceEmpleados) {
-            enlaceEmpleados.href = '/admin/empleados?token=' + token;
-            console.log('Enlace Empleados:', enlaceEmpleados.href);
-        }
-        
-        const enlaceLogs = document.getElementById('enlaceLogs');
-        if (enlaceLogs) {
-            enlaceLogs.href = '/admin/logs?token=' + token;
-        }
-        
-        const enlaceClientes = document.getElementById('enlaceClientes');
-        if (enlaceClientes) {
-            enlaceClientes.href = '/admin/clientes?token=' + token;
-        }
-        
         const enlaceMascotas = document.getElementById('enlaceMascotas');
         if (enlaceMascotas) {
-            enlaceMascotas.href = '/admin/mascotas?token=' + token;
-            console.log('Enlace Mascotas:', enlaceMascotas.href);
+            enlaceMascotas.href = '/cliente/mascotas?token=' + token;
         }
         
+        const enlaceSolicitarCita = document.getElementById('enlaceSolicitarCita');
+        if (enlaceSolicitarCita) {
+            enlaceSolicitarCita.href = '/cliente/solicitar-cita?token=' + token;
+        }
+        
+        const enlaceMisCitas = document.getElementById('enlaceMisCitas');
+        if (enlaceMisCitas) {
+            enlaceMisCitas.href = '/cliente/mis-citas?token=' + token;
+        }
+
         // Cargar datos del usuario
         fetch('/api/me', {
             headers: { 'Authorization': 'Bearer ' + token }
         }).then(res => res.json()).then(data => {
             if (data.user) {
                 document.getElementById('userInfo').innerHTML = `
-                    <strong>Bienvenido:</strong> ${data.user.nombre_completo}<br>
-                    <strong>Email:</strong> ${data.user.correo}<br>
-                    <strong>Rol:</strong> ${data.user.rol.nombre}
+                    <strong>Hola:</strong> ${data.user.nombre_completo}<br>
+                    <strong>Email:</strong> ${data.user.correo}
                 `;
             }
         }).catch(() => {
@@ -90,10 +81,7 @@
         function logout() {
             fetch('/api/logout', {
                 method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Authorization': 'Bearer ' + token }
             }).then(() => {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');

@@ -119,8 +119,10 @@ class AuthController extends Controller
         $redirectUrl = '/dashboard';
         if ($usuario->rol->nombre === 'Administrador') {
             $redirectUrl = '/admin/dashboard';
-        } elseif (in_array($usuario->rol->nombre, ['Recepcion', 'Groomer'])) {
-            $redirectUrl = '/personal/dashboard';
+        } elseif ($usuario->rol->nombre === 'Recepcion') {
+            $redirectUrl = '/recepcion/dashboard';
+        } elseif ($usuario->rol->nombre === 'Groomer') {
+            $redirectUrl = '/groomer/dashboard';
         } else {
             $redirectUrl = '/cliente/dashboard';
         }

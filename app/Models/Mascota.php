@@ -59,4 +59,8 @@ class Mascota extends Model
     {
         return $this->estado === 'activa';
     }
+    public function citas()
+{
+    return $this->hasMany(Cita::class, 'id_mascota');
+}
 }

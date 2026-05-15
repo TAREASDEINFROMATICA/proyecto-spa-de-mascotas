@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Personal - Pet Spa</title>
+    <title>Groomer - Pet Spa</title>
     <style>
         body { font-family: Arial; margin: 50px; background: #e8f5e9; }
         .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 10px; }
-        h1 { color: #2196F3; }
+        h1 { color: #4CAF50; }
         button { background: red; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        .info { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; }
         ul { list-style: none; padding: 0; }
-        li { padding: 8px 0; }
+        li { margin: 10px 0; }
+        a { text-decoration: none; color: #4CAF50; }
+        a:hover { text-decoration: underline; }
+        .btn-cambiar { background: #FF9800; margin-top: 15px; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; }
         
-        /* Modal */
+        /* Estilos para el modal */
         .modal {
             display: none;
             position: fixed;
@@ -23,82 +26,126 @@
             background-color: rgba(0,0,0,0.5);
         }
         .modal-content {
-            background-color: white;
-            margin: 10% auto;
+            background: white;
+            width: 450px;
+            margin: 100px auto;
             padding: 25px;
             border-radius: 10px;
-            width: 90%;
-            max-width: 450px;
             position: relative;
-            animation: modalopen 0.3s;
-        }
-        @keyframes modalopen {
-            from { opacity: 0; transform: translateY(-50px); }
-            to { opacity: 1; transform: translateY(0); }
         }
         .close {
             position: absolute;
             right: 20px;
             top: 15px;
             font-size: 28px;
-            font-weight: bold;
             cursor: pointer;
             color: #aaa;
         }
         .close:hover { color: black; }
-        .modal input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; }
-        .modal button { background: #4CAF50; width: 100%; margin-top: 10px; }
-        .btn-cambiar {
-            background: #FF9800;
-            margin-top: 15px;
-            width: 100%;
+        
+        /* Medidor de fuerza */
+        .strength-meter {
+            height: 5px;
+            background: #ddd;
+            border-radius: 3px;
+            margin: 8px 0;
         }
-        .strength-meter { height: 5px; background: #ddd; border-radius: 3px; margin: 8px 0; }
-        .strength-meter-fill { height: 100%; width: 0%; border-radius: 3px; transition: all 0.3s; }
-        .weak { background: #e74c3c; }
-        .medium { background: #f39c12; }
-        .strong { background: #27ae60; }
-        .requirement { font-size: 12px; margin: 3px 0; }
+        .strength-meter-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+        .weak { background: #e74c3c; width: 33%; }
+        .medium { background: #f39c12; width: 66%; }
+        .strong { background: #27ae60; width: 100%; }
+        
+        /* Requisitos */
+        .requirement {
+            font-size: 12px;
+            margin: 3px 0;
+        }
         .requirement.valid { color: #27ae60; }
         .requirement.invalid { color: #e74c3c; }
+        
+        /* Campo con ojo */
+        .password-container {
+            position: relative;
+            margin: 8px 0;
+        }
+        .password-container input {
+            width: 100%;
+            padding: 8px;
+            padding-right: 35px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
         .mensaje { margin-top: 10px; padding: 10px; border-radius: 5px; font-size: 14px; }
         .mensaje.exito { background: #d4edda; color: #155724; }
         .mensaje.error { background: #f8d7da; color: #721c24; }
+        
+        input, select { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
+    @php $token = request()->query('token'); @endphp
+
     <div class="container">
-        <h1>✂️ Panel de Personal</h1>
+        <h1>✂️ Panel de Groomer</h1>
         <div class="info" id="userInfo">Cargando...</div>
         <hr>
-        <h2>📅 Tu Agenda Hoy</h2>
+        <h2>📅 Mi Agenda</h2>
         <ul>
-            <li>📋 Ver agenda del día</li>
-            <li>🐕 Mascotas en espera</li>
-            <li>✅ Registrar servicio completado</li>
+            <li>📋 Mi Agenda de Hoy (en construcción)</li>
+            <li>🐕 Mascotas Asignadas (en construcción)</li>
+            <li>✅ Checklist de Servicios (en construcción)</li>
+            <li>📸 Galería de Fotos (en construcción)</li>
+            <li>📦 Mis Insumos (en construcción)</li>
         </ul>
         
-        <!-- Botón para abrir modal -->
         <button class="btn-cambiar" onclick="abrirModal()">🔒 Cambiar Contraseña</button>
-        
         <button onclick="logout()" style="margin-top: 20px;">🚪 Cerrar Sesión</button>
     </div>
 
-    <!-- Modal para cambiar contraseña -->
+    <!-- Modal para cambiar contraseña MEJORADO -->
     <div id="modalPassword" class="modal">
         <div class="modal-content">
             <span class="close" onclick="cerrarModal()">&times;</span>
             <h3>🔒 Cambiar Contraseña</h3>
+            
             <form id="cambiarPasswordForm">
-                <input type="password" id="contrasena_actual" placeholder="Contraseña actual *" required>
+                <!-- Contraseña actual -->
+                <label>Contraseña actual *</label>
+                <div class="password-container">
+                    <input type="password" id="contrasena_actual" placeholder="Ingrese su contraseña actual" required>
+                    <span class="toggle-password" onclick="togglePassword('contrasena_actual')">👁️</span>
+                </div>
                 
-                <input type="password" id="contrasena_nueva" placeholder="Nueva contraseña *" required>
+                <!-- Nueva contraseña -->
+                <label>Nueva contraseña *</label>
+                <div class="password-container">
+                    <input type="password" id="contrasena_nueva" placeholder="Mínimo 8 caracteres" required>
+                    <span class="toggle-password" onclick="togglePassword('contrasena_nueva')">👁️</span>
+                </div>
+                
+                <!-- Medidor de fuerza -->
                 <div class="strength-meter">
                     <div class="strength-meter-fill" id="strengthFill"></div>
                 </div>
-                <div id="strengthText"></div>
+                <div id="strengthText" style="font-size: 12px;"></div>
                 
+                <!-- Requisitos -->
                 <div id="requisitos">
                     <div class="requirement invalid" id="req-length">❌ Mínimo 8 caracteres</div>
                     <div class="requirement invalid" id="req-upper">❌ Al menos una mayúscula</div>
@@ -107,7 +154,13 @@
                     <div class="requirement invalid" id="req-symbol">❌ Al menos un símbolo (@$!%*#?&)</div>
                 </div>
                 
-                <input type="password" id="contrasena_nueva_confirmation" placeholder="Confirmar nueva contraseña *" required>
+                <!-- Confirmar contraseña -->
+                <label>Confirmar nueva contraseña *</label>
+                <div class="password-container">
+                    <input type="password" id="contrasena_nueva_confirmation" placeholder="Repita la nueva contraseña" required>
+                    <span class="toggle-password" onclick="togglePassword('contrasena_nueva_confirmation')">👁️</span>
+                </div>
+                
                 <button type="submit">✅ Cambiar Contraseña</button>
             </form>
             <div id="passwordResultado"></div>
@@ -118,50 +171,17 @@
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/';
 
-        // Cargar datos del usuario
-        fetch('/api/me', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        }).then(res => res.json()).then(data => {
-            if (data.user) {
-                document.getElementById('userInfo').innerHTML = `
-                    <strong>Bienvenido/a:</strong> ${data.user.nombre_completo}<br>
-                    <strong>📧 Email:</strong> ${data.user.correo}<br>
-                    <strong>👔 Rol:</strong> ${data.user.rol.nombre}
-                `;
-            }
-        }).catch(() => window.location.href = '/');
-
-        // =========================================================
-        // MODAL
-        // =========================================================
-        function abrirModal() {
-            document.getElementById('modalPassword').style.display = 'block';
-            // Limpiar formulario
-            $('#cambiarPasswordForm')[0].reset();
-            $('#passwordResultado').html('');
-            $('#strengthFill').css('width', '0%');
-            $('#strengthText').html('');
-            $('.requirement').each(function() {
-                $(this).removeClass('valid').addClass('invalid');
-                $(this).html($(this).html().replace('✅', '❌'));
-            });
-        }
-        
-        function cerrarModal() {
-            document.getElementById('modalPassword').style.display = 'none';
-        }
-        
-        // Cerrar modal si se hace clic fuera del contenido
-        window.onclick = function(event) {
-            const modal = document.getElementById('modalPassword');
-            if (event.target == modal) {
-                cerrarModal();
+        // Mostrar/ocultar contraseña
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+            } else {
+                input.type = 'password';
             }
         }
 
-        // =========================================================
-        // MEDIDOR DE FUERZA DE CONTRASEÑA
-        // =========================================================
+        // Medidor de fuerza de contraseña
         function checkPasswordStrength(password) {
             const checks = {
                 length: password.length >= 8,
@@ -211,10 +231,37 @@
         document.getElementById('contrasena_nueva').addEventListener('input', function() {
             checkPasswordStrength(this.value);
         });
-        
-        // =========================================================
-        // CAMBIAR CONTRASEÑA
-        // =========================================================
+
+        function abrirModal() { document.getElementById('modalPassword').style.display = 'block'; }
+        function cerrarModal() { 
+            document.getElementById('modalPassword').style.display = 'none';
+            $('#cambiarPasswordForm')[0].reset();
+            $('#passwordResultado').html('');
+            $('#strengthFill').css('width', '0%');
+            $('#strengthText').html('');
+            $('.requirement').each(function() {
+                $(this).removeClass('valid').addClass('invalid');
+                $(this).html($(this).html().replace('✅', '❌'));
+            });
+        }
+
+        fetch('/api/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(res => res.json()).then(data => {
+            if (data.user) {
+                document.getElementById('userInfo').innerHTML = `
+                    <strong>Bienvenido/a:</strong> ${data.user.nombre_completo}<br>
+                    <strong>Email:</strong> ${data.user.correo}<br>
+                    <strong>Rol:</strong> ${data.user.rol.nombre}
+                `;
+            }
+        });
+
+        function logout() {
+            fetch('/api/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } })
+                .then(() => { localStorage.removeItem('token'); window.location.href = '/'; });
+        }
+
         $('#cambiarPasswordForm').on('submit', function(e) {
             e.preventDefault();
             
@@ -234,10 +281,7 @@
             $.ajax({
                 url: '/cambiar-contrasena',
                 method: 'POST',
-                headers: { 
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                 data: JSON.stringify({
                     contrasena_actual: $('#contrasena_actual').val(),
                     contrasena_nueva: nuevaPassword,
@@ -245,44 +289,30 @@
                 }),
                 success: function(response) {
                     $('#passwordResultado').html('<div class="mensaje exito">✅ ' + response.message + '</div>');
-                    setTimeout(function() {
-                        cerrarModal();
-                        // Opcional: cerrar sesión después de cambiar contraseña
-                        // logout();
-                    }, 2000);
+                    setTimeout(cerrarModal, 2000);
                 },
                 error: function(xhr) {
-                    let msg = xhr.responseJSON?.message || 'Error al cambiar contraseña';
-                    $('#passwordResultado').html('<div class="mensaje error">❌ ' + msg + '</div>');
+                    $('#passwordResultado').html('<div class="mensaje error">❌ ' + (xhr.responseJSON?.message || 'Error') + '</div>');
                 }
             });
         });
-
+          
         // =========================================================
-        // CERRAR SESIÓN
-        // =========================================================
-        function logout() {
-            fetch('/api/logout', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token }
-            }).then(() => {
-                localStorage.removeItem('token');
-                window.location.href = '/';
-            });
-        }
-        
-        // =========================================================
-        // SESIÓN POR INACTIVIDAD
+        // SESIÓN POR INACTIVIDAD (30 segundos)
         // =========================================================
         let tiempoInactividad;
-        const TIEMPO_LIMITE = 30 * 1000;
+        const TIEMPO_LIMITE = 30 * 1000; // 30 segundos
         
         function cerrarSesionPorInactividad() {
             fetch('/api/logout', {
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token }
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Content-Type': 'application/json'
+                }
             }).finally(() => {
                 localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 window.location.href = '/';
             });
         }

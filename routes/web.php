@@ -15,6 +15,11 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\PerfilClienteController;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\MascotaController;
+use App\Http\Controllers\ServicioController;
+use App\Http\Controllers\AgendaController;
+use App\Http\Controllers\CitaController;
+
+
 
 // Redirigir cuando no hay autenticación
 Route::get('/login', function () {
@@ -325,3 +330,290 @@ Route::get('/admin/mascotas/{id}/activate', function (Request $request, $id) {
     $controller = new \App\Http\Controllers\MascotaController();
     return $controller->activate($request, $id);
 })->name('admin.mascotas.activate');
+
+
+//nuevo 
+// Módulo de Servicios (solo admin)
+Route::get('/admin/servicios', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new ServicioController();
+    return $controller->index(request());
+})->name('admin.servicios.index');
+
+Route::get('/admin/servicios/create', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new ServicioController();
+    return $controller->create(request());
+})->name('admin.servicios.create');
+
+Route::post('/admin/servicios', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new ServicioController();
+    return $controller->store(request());
+})->name('admin.servicios.store');
+
+Route::get('/admin/servicios/{id}/edit', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new ServicioController();
+    return $controller->edit(request(), $id);
+})->name('admin.servicios.edit');
+
+Route::put('/admin/servicios/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new ServicioController();
+    return $controller->update(request(), $id);
+})->name('admin.servicios.update');
+
+Route::delete('/admin/servicios/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new ServicioController();
+    return $controller->destroy($id);
+})->name('admin.servicios.destroy');
+
+Route::get('/admin/servicios/{id}/activate', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new ServicioController();
+    return $controller->activate($id);
+})->name('admin.servicios.activate');
+Route::get('/admin/servicios/{id}/desactivate', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ServicioController();
+    return $controller->desactivate($id);
+})->name('admin.servicios.desactivate');
+
+
+// Módulo de Agenda
+Route::get('/admin/agenda', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new AgendaController();
+    return $controller->agendaMaestro(request());
+})->name('admin.agenda.index');
+
+Route::get('/admin/agenda/horarios/{empleadoId}/{fecha}/{servicioId}/{mascotaId}', function ($empleadoId, $fecha, $servicioId, $mascotaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new AgendaController();
+    return $controller->horariosDisponibles(request(), $empleadoId, $fecha, $servicioId, $mascotaId);
+})->name('admin.agenda.horarios');
+
+
+
+// Módulo de Citas
+Route::get('/admin/citas/create', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new CitaController();
+    return $controller->create(request());
+})->name('admin.citas.create');
+
+Route::get('/admin/citas/horarios', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new CitaController();
+    return $controller->getHorariosDisponibles(request());
+})->name('admin.citas.horarios');
+
+Route::post('/admin/citas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new CitaController();
+    return $controller->store(request());
+})->name('admin.citas.store');
+
+
+
+Route::get('/admin/citas/{id}/edit', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->edit(request(), $id);
+})->name('admin.citas.edit');
+
+Route::put('/admin/citas/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->update(request(), $id);
+})->name('admin.citas.update');
+
+
+
+Route::post('/admin/citas/{id}/cancel', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->cancel(request(), $id);
+})->name('admin.citas.cancel');
+
+
+
+// Cliente solicita cita
+Route::get('/cliente/solicitar-cita', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->solicitarForm(request());
+})->name('cliente.cita.solicitar');
+
+Route::post('/cliente/solicitar-cita', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->solicitarStore(request());
+})->name('cliente.cita.store');
+
+// Cliente ve sus citas
+Route::get('/cliente/mis-citas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->misCitas(request());
+})->name('cliente.citas');
+
+// Recepción ve citas pendientes
+Route::get('/personal/citas-pendientes', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->citasPendientes(request());
+})->name('personal.citas.pendientes');
+
+// Recepción confirma cita
+Route::post('/admin/citas/{id}/confirmar', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->confirmarCita(request(), $id);
+})->name('admin.citas.confirmar');
+
+
+
+// Recepción
+Route::get('/recepcion/dashboard', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    return view('personal.recepcion.dashboard');
+})->name('recepcion.dashboard');
+
+// Groomer
+Route::get('/groomer/dashboard', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    return view('personal.groomer.dashboard');
+})->name('groomer.dashboard');
+
+// Cliente cancela su cita
+Route::post('/cliente/citas/{id}/cancelar', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->clienteCancelar(request(), $id);
+})->name('cliente.citas.cancelar');
+
+
+// =========================================================
+// RECEPCIÓN - GESTIÓN DE CLIENTES Y MASCOTAS
+// =========================================================
+// Recepción - Clientes y Mascotas
+Route::get('/recepcion/clientes', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteController();
+    return $controller->index(request());
+})->name('recepcion.clientes');
+
+Route::get('/recepcion/mascotas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->index(request());
+})->name('recepcion.mascotas');
+
+Route::get('/recepcion/clientes/{id}/ver', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteController();
+    return $controller->show(request(), $id);
+})->name('recepcion.clientes.ver');
+
+Route::get('/personal/citas-pendientes', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->citasPendientes(request());
+})->name('personal.citas.pendientes');
+
+// Recepción - Ver detalles de una mascota
+Route::get('/recepcion/mascotas/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\MascotaController();
+    return $controller->show(request(), $id);
+})->name('recepcion.mascotas.show');

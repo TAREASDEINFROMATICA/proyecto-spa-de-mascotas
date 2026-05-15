@@ -6,20 +6,18 @@
         body { font-family: Arial; margin: 50px; background: #fff3e0; }
         .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; }
         input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; }
-        button { background: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; }
+        button { background: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
         .error { color: red; margin-bottom: 15px; }
         .foto-actual { text-align: center; margin: 15px 0; }
         .foto-actual img { max-width: 150px; border-radius: 10px; }
-        .btn-back { background: #607d8b; text-decoration: none; color: white; padding: 10px 15px; border-radius: 5px; display: inline-block; margin-top: 15px; }
+        .btn-back { background: #607d8b; text-decoration: none; color: white; padding: 10px 15px; border-radius: 5px; display: inline-block; margin-top: 15px; text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>✏️ Editar {{ $mascota->nombre }}</h2>
         
-        @php
-            $token = request()->query('token');
-        @endphp
+        @php $token = request()->query('token'); @endphp
         
         @if($errors->any())
             <div class="error">
@@ -32,19 +30,27 @@
         <form method="POST" action="/cliente/mascotas/{{ $mascota->id_mascota }}?token={{ $token }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
-            
             <input type="hidden" name="token" value="{{ $token }}">
+            
+            <!-- Admin y Recepción pueden cambiar el dueño -->
+            @if(isset($clientes) && $clientes)
+            <select name="id_cliente" required>
+                <option value="">Seleccionar dueño</option>
+                @foreach($clientes as $c)
+                    <option value="{{ $c->id_cliente }}" {{ $mascota->id_cliente == $c->id_cliente ? 'selected' : '' }}>
+                        {{ $c->usuario->nombres }} {{ $c->usuario->apellidos }}
+                    </option>
+                @endforeach
+            </select>
+            @endif
             
             <input type="text" name="nombre" value="{{ old('nombre', $mascota->nombre) }}" placeholder="Nombre de la mascota *" required>
             
             <select name="especie" required>
                 <option value="">Seleccionar especie</option>
-                <option value="Perro" {{ $mascota->especie == 'Perro' ? 'selected' : '' }}>Perro</option>
-                <option value="Gato" {{ $mascota->especie == 'Gato' ? 'selected' : '' }}>Gato</option>
-                <option value="Conejo" {{ $mascota->especie == 'Conejo' ? 'selected' : '' }}>Conejo</option>
-                <option value="Hamster" {{ $mascota->especie == 'Hamster' ? 'selected' : '' }}>Hamster</option>
-                <option value="Ave" {{ $mascota->especie == 'Ave' ? 'selected' : '' }}>Ave</option>
-                <option value="Otro" {{ $mascota->especie == 'Otro' ? 'selected' : '' }}>Otro</option>
+                @foreach($especies as $e)
+                    <option value="{{ $e }}" {{ $mascota->especie == $e ? 'selected' : '' }}>{{ $e }}</option>
+                @endforeach
             </select>
             
             <input type="text" name="raza" value="{{ old('raza', $mascota->raza) }}" placeholder="Raza">
@@ -61,12 +67,9 @@
             
             <select name="temperamento_general">
                 <option value="">Seleccionar temperamento</option>
-                <option value="tranquilo" {{ $mascota->temperamento_general == 'tranquilo' ? 'selected' : '' }}>Tranquilo</option>
-                <option value="nervioso" {{ $mascota->temperamento_general == 'nervioso' ? 'selected' : '' }}>Nervioso</option>
-                <option value="agresivo" {{ $mascota->temperamento_general == 'agresivo' ? 'selected' : '' }}>Agresivo</option>
-                <option value="miedoso" {{ $mascota->temperamento_general == 'miedoso' ? 'selected' : '' }}>Miedoso</option>
-                <option value="jugueton" {{ $mascota->temperamento_general == 'jugueton' ? 'selected' : '' }}>Jugueton</option>
-                <option value="otro" {{ $mascota->temperamento_general == 'otro' ? 'selected' : '' }}>Otro</option>
+                @foreach($temperamentos as $t)
+                    <option value="{{ $t }}" {{ $mascota->temperamento_general == $t ? 'selected' : '' }}>{{ ucfirst($t) }}</option>
+                @endforeach
             </select>
             
             <textarea name="alergias" placeholder="Alergias">{{ old('alergias', $mascota->alergias) }}</textarea>
@@ -85,7 +88,14 @@
             <button type="submit">💾 Guardar Cambios</button>
         </form>
         
-        <a href="/cliente/mascotas?token={{ $token }}" class="btn-back">← Volver</a>
+        <!-- Botón volver según el rol -->
+        @if($rol == 'admin')
+            <a href="/admin/mascotas?token={{ $token }}" class="btn-back">← Volver a Mascotas</a>
+        @elseif($rol == 'recepcion')
+            <a href="/recepcion/mascotas?token={{ $token }}" class="btn-back">← Volver a Mascotas</a>
+        @else
+            <a href="/cliente/mascotas/{{ $mascota->id_mascota }}?token={{ $token }}" class="btn-back">← Volver a Ficha</a>
+        @endif
     </div>
 </body>
 </html>

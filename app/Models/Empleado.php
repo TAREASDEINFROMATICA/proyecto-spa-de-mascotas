@@ -33,4 +33,8 @@ class Empleado extends Model
     {
         return $this->cargo === 'Recepcion';
     }
+    public function citas()
+{
+    return $this->hasMany(Cita::class, 'id_empleado');
+}
 }

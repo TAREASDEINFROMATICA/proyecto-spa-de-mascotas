@@ -45,7 +45,14 @@
             <label>Estado:</label> {{ $mascota->estado == 'activa' ? '✅ Activa' : '❌ Inactiva' }}<br>
         </div>
         
-        <a href="/cliente/mascotas?token={{ $token }}" class="btn btn-back">← Volver</a>
+        @if(isset($rol) && $rol == 'admin')
+    <a href="/admin/mascotas?token={{ $token }}" class="btn btn-back">← Volver</a>
+@elseif(isset($rol) && $rol == 'recepcion')
+    <a href="/recepcion/mascotas?token={{ $token }}" class="btn btn-back">← Volver</a>
+@else
+    <a href="/cliente/mascotas?token={{ $token }}" class="btn btn-back">← Volver</a>
+@endif
+        
         <a href="/cliente/mascotas/{{ $mascota->id_mascota }}/edit?token={{ $token }}" class="btn btn-edit">✏️ Editar</a>
     </div>
 </body>

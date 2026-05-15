@@ -77,8 +77,10 @@
                 @endforeach
             </tbody>
         </table>
-        
-        <a href="/admin/dashboard" class="btn-volver">← Volver al Dashboard</a>
+       @if($rol == 'admin')
+    <a href="/admin/dashboard?token={{ $token }}">← Volver al Dashboard de Admin</a>
+@else   <a href="/recepcion/dashboard?token={{ $token }}">← Volver al Dashboard de Recepción</a>
+@endif  
     </div>
 </body>
 </html>

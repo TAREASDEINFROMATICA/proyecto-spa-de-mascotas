@@ -13,7 +13,8 @@
         <ul>
             <li> Ver estadísticas</li>
             <li><a href="#" id="enlaceEmpleados">Gestionar Empleados</a></li>
-            <li> Gestionar mascotas</li>
+            <li>✂️ <a href="#" id="enlaceServicios">Gestionar Servicios</a></li>
+            <li>📅 <a href="#" id="enlaceAgenda">Agenda Maestra</a></li>
             <li> Ver todas las citas</li>
             <li> Reportes financieros</li>
             <li> <a href="#" id="enlace2fa">Configurar 2FA (Google Authenticator)</a></li>
@@ -36,7 +37,14 @@
         if (enlace2fa) {
             enlace2fa.href = '/admin/configurar-2fa?token=' + token;
         }
-        
+        const enlaceAgenda = document.getElementById('enlaceAgenda');
+        if (enlaceAgenda) {
+            enlaceAgenda.href = '/admin/agenda?token=' + token;
+        }
+        const enlaceServicios = document.getElementById('enlaceServicios');
+        if (enlaceServicios) {
+            enlaceServicios.href = '/admin/servicios?token=' + token;
+        }
         const enlaceEmpleados = document.getElementById('enlaceEmpleados');
         if (enlaceEmpleados) {
             enlaceEmpleados.href = '/admin/empleados?token=' + token;
