@@ -18,7 +18,7 @@ use App\Http\Controllers\MascotaController;
 use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\CitaController;
-
+use App\Http\Controllers\GroomerController;
 
 
 // Redirigir cuando no hay autenticación
@@ -548,14 +548,6 @@ Route::get('/recepcion/dashboard', function () {
     return view('personal.recepcion.dashboard');
 })->name('recepcion.dashboard');
 
-// Groomer
-Route::get('/groomer/dashboard', function () {
-    $token = request()->query('token');
-    if ($token) {
-        request()->headers->set('Authorization', 'Bearer ' . $token);
-    }
-    return view('personal.groomer.dashboard');
-})->name('groomer.dashboard');
 
 // Cliente cancela su cita
 Route::post('/cliente/citas/{id}/cancelar', function ($id) {
@@ -617,3 +609,116 @@ Route::get('/recepcion/mascotas/{id}', function ($id) {
     $controller = new \App\Http\Controllers\MascotaController();
     return $controller->show(request(), $id);
 })->name('recepcion.mascotas.show');
+
+
+// Groomer - Dashboard principal
+Route::get('/groomer/dashboard', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    return view('personal.groomer.dashboard');
+})->name('groomer.dashboard');
+
+// Groomer - Mis Citas
+Route::get('/groomer/mis-citas', function () {
+    $token = request()->query('token');
+    if (!$token) {
+        return redirect('/');
+    }
+    request()->headers->set('Authorization', 'Bearer ' . $token);
+    $controller = new GroomerController();
+    return $controller->misCitas(request());
+})->name('groomer.mis-citas');
+
+// Groomer - Mascotas Asignadas
+Route::get('/groomer/mis-mascotas', function () {
+    $token = request()->query('token');
+    if (!$token) {
+        return redirect('/');
+    }
+    request()->headers->set('Authorization', 'Bearer ' . $token);
+    $controller = new GroomerController();
+    return $controller->misMascotas(request());
+})->name('groomer.mis-mascotas');
+
+// Groomer - Checklist
+Route::get('/groomer/checklist', function () {
+    $token = request()->query('token');
+    if (!$token) {
+        return redirect('/');
+    }
+    request()->headers->set('Authorization', 'Bearer ' . $token);
+    $controller = new GroomerController();
+    return $controller->checklist(request());
+})->name('groomer.checklist');
+
+// Groomer - Galería
+Route::get('/groomer/galeria', function () {
+    $token = request()->query('token');
+    if (!$token) {
+        return redirect('/');
+    }
+    request()->headers->set('Authorization', 'Bearer ' . $token);
+    $controller = new GroomerController();
+    return $controller->galeria(request());
+})->name('groomer.galeria');
+
+// Groomer - Insumos
+Route::get('/groomer/insumos', function () {
+    $token = request()->query('token');
+    if (!$token) {
+        return redirect('/');
+    }
+    request()->headers->set('Authorization', 'Bearer ' . $token);
+    $controller = new GroomerController();
+    return $controller->insumos(request());
+})->name('groomer.insumos');
+
+Route::get('/groomer/ficha-tecnica/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->fichaTecnica(request(), $citaId);
+})->name('groomer.ficha-tecnica');
+
+// Groomer - Cerrar servicio
+Route::post('/groomer/cerrar-servicio/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->cerrarServicio(request(), $citaId);
+})->name('groomer.cerrar-servicio');
+
+// Groomer - Subir foto
+Route::post('/groomer/subir-foto-directo', function (Request $request) {
+    $token = $request->query('token');
+    if ($token) {
+        $request->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->subirFotoDirecto($request);
+})->name('groomer.subir.foto.directo');
+// Groomer - ver ficha 
+Route::get('/groomer/ficha-tecnica-ver/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->fichaTecnicaVer(request(), $citaId);
+})->name('groomer.ficha-tecnica-ver');
+
+// Groomer - Guardar progreso
+Route::post('/groomer/guardar-progreso/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->guardarProgreso(request(), $citaId);
+})->name('groomer.guardar-progreso');

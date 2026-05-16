@@ -389,13 +389,12 @@
                                 $('#contador').text(`🕐 Tiempo restante: ${mins}:${segs.toString().padStart(2, '0')}`);
                                 if (segundos <= 0) {
                                     clearInterval(intervalo);
-                                    $('#contador').text('✅ Puedes intentar nuevamente');
-                                    // Recargar manualmente si quieres, pero no automático
+                                    location.reload();
                                 }
                                 segundos--;
                             }, 1000);
-                            
                             refreshCaptcha();
+                            
                         } else if (response && response.message) {
                             $('#resultado').html(`<div class="error"> ${response.message}</div>`);
                             refreshCaptcha();

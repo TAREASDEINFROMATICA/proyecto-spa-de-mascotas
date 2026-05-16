@@ -1,0 +1,407 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Cita;
+use App\Models\Mascota;
+use App\Models\Servicio;
+use App\Models\Empleado;
+use App\Models\FotoMascota;
+use App\Models\FichaTecnica;
+use App\Services\AuditLogService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Support\Facades\Log;
+
+class GroomerController extends Controller
+{
+    private function getUserFromToken(Request $request)
+    {
+        $token = $request->query('token') ?? $request->input('token');
+        if (!$token) return null;
+        $token = trim($token, "'\"");
+        $tokenRecord = PersonalAccessToken::findToken($token);
+        if (!$tokenRecord) return null;
+        return \App\Models\Usuario::find($tokenRecord->tokenable_id);
+    }
+
+    private function getEmpleadoId($user)
+    {
+        $empleado = Empleado::where('id_usuario', $user->id_usuario)->first();
+        return $empleado ? $empleado->id_empleado : null;
+    }
+
+    // =========================================================
+    // MIS CITAS
+    // =========================================================
+    public function misCitas(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return redirect('/');
+        }
+        
+        $empleadoId = $this->getEmpleadoId($user);
+        $citas = Cita::where('id_empleado', $empleadoId)
+            ->whereIn('estado', ['programado', 'reservado', 'concluido'])
+            ->with(['mascota', 'servicio'])
+            ->orderBy('fecha', 'desc')
+            ->get();
+        
+        $token = $request->query('token');
+        
+        return view('personal.groomer.mis-citas', compact('citas', 'token'));
+    }
+
+    // =========================================================
+    // MIS MASCOTAS ASIGNADAS
+    // =========================================================
+    public function misMascotas(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return redirect('/');
+        }
+        
+        $empleadoId = $this->getEmpleadoId($user);
+        $citas = Cita::where('id_empleado', $empleadoId)
+            ->where('estado', 'programado')
+            ->with(['mascota'])
+            ->get();
+        
+        $mascotasIds = $citas->pluck('id_mascota')->unique();
+        $mascotas = Mascota::whereIn('id_mascota', $mascotasIds)->get();
+        
+        $token = $request->query('token');
+        
+        return view('personal.groomer.mis-mascotas', compact('mascotas', 'token'));
+    }
+
+    // =========================================================
+    // CHECKLIST
+    // =========================================================
+    public function checklist(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return redirect('/');
+        }
+        
+        $token = $request->query('token');
+        
+        return view('personal.groomer.checklist', compact('token'));
+    }
+
+    // =========================================================
+    // GALERÍA DE FOTOS
+    // =========================================================
+    public function galeria(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return redirect('/');
+        }
+        
+        $empleadoId = $this->getEmpleadoId($user);
+        $citas = Cita::where('id_empleado', $empleadoId)
+            ->with(['mascota', 'fichaTecnica'])
+            ->get();
+        
+        $fotos = collect();
+        foreach ($citas as $cita) {
+            if ($cita->fichaTecnica) {
+                $fotosMascota = FotoMascota::where('id_ficha', $cita->fichaTecnica->id_ficha)->get();
+                $fotos = $fotos->merge($fotosMascota);
+            }
+        }
+        
+        $token = $request->query('token');
+        
+        return view('personal.groomer.galeria', compact('fotos', 'token'));
+    }
+
+    // =========================================================
+    // INSUMOS
+    // =========================================================
+    public function insumos(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return redirect('/');
+        }
+        
+        $token = $request->query('token');
+        
+        return view('personal.groomer.insumos', compact('token'));
+    }
+
+    // =========================================================
+    // FICHA TÉCNICA (SOLO LECTURA)
+    // =========================================================
+    public function fichaTecnicaVer(Request $request, $citaId)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return redirect('/');
+        }
+        
+        $empleadoId = $this->getEmpleadoId($user);
+        $cita = Cita::where('id_empleado', $empleadoId)
+            ->where('id_cita', $citaId)
+            ->with(['mascota', 'servicio', 'fichaTecnica'])
+            ->firstOrFail();
+        
+        // Obtener fotos SOLO de esta ficha técnica
+        $fotosAntes = FotoMascota::where('id_ficha', $cita->fichaTecnica->id_ficha ?? 0)
+            ->where('tipo', 'antes')
+            ->get();
+        
+        $fotosDespues = FotoMascota::where('id_ficha', $cita->fichaTecnica->id_ficha ?? 0)
+            ->where('tipo', 'despues')
+            ->get();
+        
+        $token = $request->query('token');
+        
+        // Parsear observaciones
+        $observaciones = $cita->observaciones ?? '';
+        
+        $checklistRealizado = [];
+        if (preg_match('/=== CHECKLIST REALIZADO ===\n(.*?)(\n\n|$)/s', $observaciones, $matches)) {
+            $checklistRealizado = explode(', ', $matches[1]);
+        }
+        
+        $recomendaciones = '';
+        if (preg_match('/=== RECOMENDACIONES ===\n(.*?)(\n\n|$)/s', $observaciones, $matches)) {
+            $recomendaciones = $matches[1];
+        }
+        
+        $estadoIngreso = '';
+        if (preg_match('/=== ESTADO DE INGRESO ===\n(.*?)(\n\n|$)/s', $observaciones, $matches)) {
+            $estadoIngreso = $matches[1];
+        }
+        
+        $observacionesExtra = '';
+        if (preg_match('/=== OBSERVACIONES ===\n(.*?)(\n\n|$)/s', $observaciones, $matches)) {
+            $observacionesExtra = $matches[1];
+        }
+        
+        return view('personal.groomer.ficha-tecnica-ver', compact(
+            'cita', 'fotosAntes', 'fotosDespues', 'token', 
+            'checklistRealizado', 'recomendaciones', 'estadoIngreso', 'observacionesExtra'
+        ));
+    }
+
+    // =========================================================
+    // FICHA TÉCNICA (EDITABLE)
+    // =========================================================
+    public function fichaTecnica(Request $request, $citaId)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return redirect('/');
+        }
+        
+        $empleadoId = $this->getEmpleadoId($user);
+        $cita = Cita::where('id_empleado', $empleadoId)
+            ->where('id_cita', $citaId)
+            ->with(['mascota', 'servicio', 'fichaTecnica'])
+            ->firstOrFail();
+        
+        // Si no tiene ficha técnica, la creamos
+        if (!$cita->fichaTecnica) {
+            $fichaTecnica = FichaTecnica::create([
+                'id_cita' => $citaId,
+                'estado_ingreso' => 'Pendiente',
+                'fecha_apertura' => Carbon::now()
+            ]);
+            $cita->load('fichaTecnica');
+        }
+        
+        // Obtener fotos SOLO de esta ficha técnica
+        $fotosAntes = FotoMascota::where('id_ficha', $cita->fichaTecnica->id_ficha)
+            ->where('tipo', 'antes')
+            ->get();
+        
+        $fotosDespues = FotoMascota::where('id_ficha', $cita->fichaTecnica->id_ficha)
+            ->where('tipo', 'despues')
+            ->get();
+        
+        // Parsear datos guardados previamente
+        $datosGuardados = [
+            'estado_ingreso' => '',
+            'checklist' => [],
+            'observaciones' => '',
+            'recomendaciones' => ''
+        ];
+        
+        if ($cita->observaciones) {
+            // Extraer ESTADO DE INGRESO
+            if (preg_match('/=== ESTADO DE INGRESO ===\n(.*?)(\n\n|$)/s', $cita->observaciones, $matches)) {
+                $datosGuardados['estado_ingreso'] = trim($matches[1]);
+            }
+            
+            // Extraer CHECKLIST REALIZADO
+            if (preg_match('/=== CHECKLIST REALIZADO ===\n(.*?)(\n\n|$)/s', $cita->observaciones, $matches)) {
+                $checklistStr = trim($matches[1]);
+                if ($checklistStr && $checklistStr !== 'Ninguno') {
+                    $datosGuardados['checklist'] = explode(', ', $checklistStr);
+                }
+            }
+            
+            // Extraer OBSERVACIONES
+            if (preg_match('/=== OBSERVACIONES ===\n(.*?)(\n\n|$)/s', $cita->observaciones, $matches)) {
+                $datosGuardados['observaciones'] = trim($matches[1]);
+            }
+            
+            // Extraer RECOMENDACIONES
+            if (preg_match('/=== RECOMENDACIONES ===\n(.*?)(\n\n|$)/s', $cita->observaciones, $matches)) {
+                $datosGuardados['recomendaciones'] = trim($matches[1]);
+            }
+        }
+        
+        $token = $request->query('token');
+        
+        return view('personal.groomer.ficha-tecnica', compact('cita', 'fotosAntes', 'fotosDespues', 'token', 'datosGuardados'));
+    }
+
+    // =========================================================
+    // CERRAR SERVICIO
+    // =========================================================
+    public function cerrarServicio(Request $request, $citaId)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+        }
+        
+        $empleadoId = $this->getEmpleadoId($user);
+        $cita = Cita::where('id_empleado', $empleadoId)
+            ->where('id_cita', $citaId)
+            ->first();
+        
+        if (!$cita) {
+            return response()->json(['success' => false, 'message' => 'Cita no encontrada'], 404);
+        }
+        
+        if ($cita->estado === 'concluido') {
+            return response()->json(['success' => false, 'message' => 'Este servicio ya está cerrado'], 400);
+        }
+        
+        $estadoIngreso = $request->input('estado_ingreso');
+        $checklist = $request->input('checklist', []);
+        $observaciones = $request->input('observaciones');
+        $recomendaciones = $request->input('recomendaciones');
+        
+        $textoFinal = "=== ESTADO DE INGRESO ===\n" . $estadoIngreso . 
+                      "\n\n=== CHECKLIST REALIZADO ===\n" . (count($checklist) > 0 ? implode(', ', $checklist) : 'Ninguno') . 
+                      "\n\n=== OBSERVACIONES ===\n" . $observaciones . 
+                      "\n\n=== RECOMENDACIONES ===\n" . $recomendaciones .
+                      "\n\n=== FECHA CIERRE ===\n" . Carbon::now()->format('Y-m-d H:i:s');
+        
+        $cita->observaciones = $textoFinal;
+        $cita->estado = 'concluido';
+        $cita->save();
+        
+        // Actualizar ficha técnica con fecha de cierre
+        if ($cita->fichaTecnica) {
+            $cita->fichaTecnica->fecha_cierre = Carbon::now();
+            $cita->fichaTecnica->save();
+        }
+        
+        AuditLogService::registrar(
+            $user->id_usuario,
+            'Cerró servicio cita ID: ' . $citaId,
+            $request
+        );
+        
+        return response()->json(['success' => true, 'message' => 'Servicio cerrado correctamente']);
+    }
+
+    // =========================================================
+    // SUBIR FOTO
+    // =========================================================
+    public function subirFotoDirecto(Request $request)
+    {
+        try {
+            $citaId = $request->cita_id;
+            $tipo = $request->tipo;
+            $foto = $request->file('foto');
+            
+            if (!$foto) {
+                return response()->json(['success' => false, 'message' => 'No hay foto']);
+            }
+            
+            // Obtener la cita con la mascota
+            $cita = Cita::with('mascota')->find($citaId);
+            if (!$cita) {
+                return response()->json(['success' => false, 'message' => 'Cita no encontrada']);
+            }
+            
+            // Buscar o crear la FICHA TÉCNICA
+            $fichaTecnica = FichaTecnica::firstOrCreate(
+                ['id_cita' => $citaId],
+                [
+                    'estado_ingreso' => 'Pendiente',
+                    'fecha_apertura' => Carbon::now()
+                ]
+            );
+            
+            // Crear nombre único para la foto (incluyendo cita_id)
+            $nombrePersonalizado = 'cita_' . $citaId . '_' . time() . '_' . str_replace(' ', '_', $cita->mascota->nombre) . '_' . $tipo . '.' . $foto->getClientOriginalExtension();
+            $path = $foto->storeAs('mascotas/galeria', $nombrePersonalizado, 'public');
+            
+            // Guardar en BD usando el id_ficha de la ficha técnica
+            FotoMascota::create([
+                'id_ficha' => $fichaTecnica->id_ficha,
+                'url' => $path,
+                'tipo' => $tipo
+            ]);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Foto subida correctamente',
+                'url' => Storage::url($path)
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    // =========================================================
+    // GUARDAR PROGRESO DE FICHA TÉCNICA (sin cerrar)
+    // =========================================================
+    public function guardarProgreso(Request $request, $citaId)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+        }
+        
+        $empleadoId = $this->getEmpleadoId($user);
+        $cita = Cita::where('id_empleado', $empleadoId)
+            ->where('id_cita', $citaId)
+            ->first();
+        
+        if (!$cita) {
+            return response()->json(['success' => false, 'message' => 'Cita no encontrada'], 404);
+        }
+        
+        $estadoIngreso = $request->input('estado_ingreso');
+        $checklist = $request->input('checklist', []);
+        $observaciones = $request->input('observaciones');
+        $recomendaciones = $request->input('recomendaciones');
+        
+        $textoGuardado = "=== ESTADO DE INGRESO ===\n" . $estadoIngreso . 
+                         "\n\n=== CHECKLIST REALIZADO ===\n" . (count($checklist) > 0 ? implode(', ', $checklist) : 'Ninguno') . 
+                         "\n\n=== OBSERVACIONES ===\n" . $observaciones . 
+                         "\n\n=== RECOMENDACIONES ===\n" . $recomendaciones;
+        
+        $cita->observaciones = $textoGuardado;
+        $cita->save();
+        
+        return response()->json(['success' => true, 'message' => 'Progreso guardado correctamente']);
+    }
+}

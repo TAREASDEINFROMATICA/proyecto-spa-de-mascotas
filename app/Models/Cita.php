@@ -48,4 +48,9 @@ class Cita extends Model
     {
         return $this->belongsTo(Empleado::class, 'id_empleado');
     }
+    // En app/Models/Cita.php
+public function fichaTecnica()
+{
+    return $this->hasOne(FichaTecnica::class, 'id_cita');
+}
 }
