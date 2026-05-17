@@ -53,4 +53,8 @@ public function fichaTecnica()
 {
     return $this->hasOne(FichaTecnica::class, 'id_cita');
 }
+public function calificacion()
+{
+    return $this->hasOne(Calificacion::class, 'id_cita');
+}
 }

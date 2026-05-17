@@ -1049,3 +1049,97 @@ Route::post('/admin/productos/{id}/imagen', function ($id) {
     $controller = new \App\Http\Controllers\ProductoVentaController();
     return $controller->guardarImagen(request(), $id);
 })->name('admin.productos.imagen');
+
+
+
+
+// Groomer - Mis calificaciones
+Route::get('/groomer/mis-calificaciones', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->misCalificaciones(request());
+})->name('groomer.mis-calificaciones');
+
+// Groomer - Exportar CSV
+Route::get('/groomer/exportar-csv', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->exportarServiciosCSV(request());
+})->name('groomer.exportar.csv');
+
+// Groomer - Mis estadísticas
+Route::get('/groomer/mis-estadisticas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->misEstadisticas(request());
+})->name('groomer.mis-estadisticas');
+
+Route::post('/cliente/calificar/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CalificacionController();
+    return $controller->store(request(), $citaId);
+})->name('cliente.calificar');
+
+
+// =========================================================
+// VENTAS
+// =========================================================
+Route::get('/admin/ventas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\VentaController();
+    return $controller->index(request());
+})->name('admin.ventas.index');
+
+Route::get('/admin/ventas/create', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\VentaController();
+    return $controller->create(request());
+})->name('admin.ventas.create');
+
+Route::post('/admin/ventas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\VentaController();
+    return $controller->store(request());
+})->name('admin.ventas.store');
+
+Route::get('/admin/ventas/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\VentaController();
+    return $controller->show(request(), $id);
+})->name('admin.ventas.show');
+
+// =========================================================
+// API - PRODUCTOS PARA VENTAS (búsqueda)
+// =========================================================
+Route::get('/api/productos/buscar', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\VentaController();
+    return $controller->buscarProductos(request());
+})->name('api.productos.buscar');

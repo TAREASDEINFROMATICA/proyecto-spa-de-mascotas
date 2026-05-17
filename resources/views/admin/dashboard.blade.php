@@ -2,66 +2,244 @@
 <html>
 <head>
     <title>Admin - Pet Spa</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial; margin: 30px; background: #e8f5e9; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #4CAF50; margin-bottom: 20px; }
-        h2 { color: #2196F3; margin: 20px 0 10px 0; }
-        .info { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        ul { list-style: none; }
-        li { margin: 10px 0; padding: 8px; background: #f5f5f5; border-radius: 5px; }
-        li:hover { background: #e0e0e0; }
-        a { text-decoration: none; color: #333; display: block; }
-        a:hover { color: #4CAF50; }
-        button { background: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px; font-size: 16px; }
-        button:hover { background: #d32f2f; }
-        .submenu { margin-left: 20px; margin-top: 5px; }
-        .submenu li { background: #fff; border-left: 3px solid #4CAF50; }
-        hr { margin: 15px 0; border-color: #ddd; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .info-card {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdef5 100%);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .info-card i {
+            font-size: 48px;
+            color: #1976D2;
+        }
+        
+        .info-text {
+            flex: 1;
+        }
+        
+        .info-text strong {
+            font-size: 18px;
+            color: #1565C0;
+        }
+        
+        .info-text p {
+            color: #555;
+            margin-top: 5px;
+        }
+        
+        h2 {
+            font-size: 18px;
+            color: #333;
+            margin: 25px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        h2 i {
+            color: #4CAF50;
+            font-size: 20px;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .menu-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .menu-item:hover {
+            background: #e8f5e9;
+            transform: translateX(5px);
+        }
+        
+        .menu-item a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .menu-item a i {
+            width: 28px;
+            font-size: 18px;
+            color: #4CAF50;
+        }
+        
+        .menu-item a:hover {
+            color: #4CAF50;
+        }
+        
+        .btn-logout {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-logout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244,67,54,0.3);
+        }
+        
+        hr {
+            margin: 20px 0;
+            border: none;
+            height: 1px;
+            background: linear-gradient(to right, #e0e0e0, transparent);
+        }
+        
+        @media (max-width: 640px) {
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+            .info-card {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🐾 Panel de Administrador</h1>
-        <div class="info" id="userInfo">Cargando datos...</div>
-        <hr>
+        <div class="header">
+            <h1>
+                <i class="fas fa-shield-alt"></i>
+                Panel de Administrador
+            </h1>
+            <p>Gestión completa del Spa de Mascotas</p>
+        </div>
         
-        <h2>📊 Gestión Principal</h2>
-        <ul>
-            <li><a href="#" id="enlaceEstadisticas">📈 Ver estadísticas</a></li>
-            <li><a href="#" id="enlaceEmpleados">👥 Gestionar Empleados</a></li>
-            <li><a href="#" id="enlaceServicios">✂️ Gestionar Servicios</a></li>
-            <li><a href="#" id="enlaceAgenda">📅 Agenda Maestra</a></li>
-            <li><a href="#" id="enlaceCitas">📋 Ver todas las citas</a></li>
-        </ul>
-
-        <h2>💰 Ventas y Finanzas</h2>
-        <ul>
-            <li><a href="#" id="enlaceReportes">📊 Reportes financieros</a></li>
-            <li><a href="#" id="enlaceVentas">🛒 Historial de Ventas</a></li>
-        </ul>
-
-        <h2>📦 Inventario</h2>
-        <ul>
-            <li><a href="#" id="enlaceInsumos">🧴 Gestión de Insumos (Grooming)</a></li>
-            <li><a href="#" id="enlaceProductos">🏪 Gestión de Productos (Tienda)</a></li>
-            <li><a href="#" id="enlaceAlertasStock">⚠️ Alertas de Stock Bajo</a></li>
-        </ul>
-
-        <h2>👤 Gestión de Usuarios</h2>
-        <ul>
-            <li><a href="#" id="enlaceClientes">👥 Gestionar Clientes</a></li>
-            <li><a href="#" id="enlaceMascotas">🐕 Todas las Mascotas</a></li>
-        </ul>
-
-        <h2>🔐 Seguridad</h2>
-        <ul>
-            <li><a href="#" id="enlace2fa">🔑 Configurar 2FA (Google Authenticator)</a></li>
-            <li><a href="#" id="enlaceLogs">📜 Ver Logs de Auditoría</a></li>
-        </ul>
-
-        <button onclick="logout()">🚪 Cerrar Sesión</button>
+        <div class="content">
+            <div class="info-card">
+                <i class="fas fa-user-circle"></i>
+                <div class="info-text">
+                    <strong id="userName">Cargando...</strong>
+                    <p id="userEmail">Cargando datos del usuario...</p>
+                    <p id="userRol" style="margin-top: 5px;"></p>
+                </div>
+            </div>
+            
+            <h2><i class="fas fa-tachometer-alt"></i> Gestión Principal</h2>
+            <div class="menu-grid">
+                <div class="menu-item"><a href="#" id="enlaceEstadisticas"><i class="fas fa-chart-line"></i> Ver estadísticas</a></div>
+                <div class="menu-item"><a href="#" id="enlaceEmpleados"><i class="fas fa-users"></i> Gestionar Empleados</a></div>
+                <div class="menu-item"><a href="#" id="enlaceServicios"><i class="fas fa-cut"></i> Gestionar Servicios</a></div>
+                <div class="menu-item"><a href="#" id="enlaceAgenda"><i class="fas fa-calendar-alt"></i> Agenda Maestra</a></div>
+                <div class="menu-item"><a href="#" id="enlaceCitas"><i class="fas fa-calendar-check"></i> Ver todas las citas</a></div>
+            </div>
+            
+            <h2><i class="fas fa-chart-line"></i> Ventas y Finanzas</h2>
+            <div class="menu-grid">
+                <div class="menu-item"><a href="#" id="enlaceReportes"><i class="fas fa-file-alt"></i> Reportes financieros</a></div>
+                <div class="menu-item"><a href="#" id="enlaceVentas"><i class="fas fa-shopping-cart"></i> Gestión de Ventas</a></div>
+            </div>
+            
+            <h2><i class="fas fa-boxes"></i> Inventario</h2>
+            <div class="menu-grid">
+                <div class="menu-item"><a href="#" id="enlaceInsumos"><i class="fas fa-flask"></i> Gestión de Insumos (Grooming)</a></div>
+                <div class="menu-item"><a href="#" id="enlaceProductos"><i class="fas fa-store"></i> Gestión de Productos (Tienda)</a></div>
+                <div class="menu-item"><a href="#" id="enlaceCategorias"><i class="fas fa-folder"></i> Gestión de Categorías</a></div>
+                <div class="menu-item"><a href="#" id="enlaceAlertasStock"><i class="fas fa-exclamation-triangle"></i> Alertas de Stock Bajo</a></div>
+            </div>
+            
+            <h2><i class="fas fa-user-friends"></i> Gestión de Usuarios</h2>
+            <div class="menu-grid">
+                <div class="menu-item"><a href="#" id="enlaceClientes"><i class="fas fa-user"></i> Gestionar Clientes</a></div>
+                <div class="menu-item"><a href="#" id="enlaceMascotas"><i class="fas fa-dog"></i> Todas las Mascotas</a></div>
+            </div>
+            
+            <h2><i class="fas fa-lock"></i> Seguridad</h2>
+            <div class="menu-grid">
+                <div class="menu-item"><a href="#" id="enlace2fa"><i class="fas fa-key"></i> Configurar 2FA (Google Authenticator)</a></div>
+                <div class="menu-item"><a href="#" id="enlaceLogs"><i class="fas fa-history"></i> Ver Logs de Auditoría</a></div>
+            </div>
+            
+            <button onclick="logout()" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </div>
     </div>
 
     <script>
@@ -85,7 +263,7 @@
         // =========================================================
         // GESTIÓN PRINCIPAL
         // =========================================================
-        crearEnlace('enlaceEstadisticas', '/admin/dashboard');  // Temporal, misma página
+        crearEnlace('enlaceEstadisticas', '/admin/dashboard');
         crearEnlace('enlaceEmpleados', '/admin/empleados');
         crearEnlace('enlaceServicios', '/admin/servicios');
         crearEnlace('enlaceAgenda', '/admin/agenda');
@@ -95,13 +273,14 @@
         // VENTAS Y FINANZAS
         // =========================================================
         crearEnlace('enlaceReportes', '/admin/reportes');
-        crearEnlace('enlaceVentas', '/admin/ventas');
+        crearEnlace('enlaceVentas', '/admin/ventas');  // ← NUEVO BOTÓN
         
         // =========================================================
         // INVENTARIO
         // =========================================================
         crearEnlace('enlaceInsumos', '/admin/insumos');
         crearEnlace('enlaceProductos', '/admin/productos');
+        crearEnlace('enlaceCategorias', '/admin/categorias');
         crearEnlace('enlaceAlertasStock', '/admin/alertas-stock');
         
         // =========================================================
@@ -123,13 +302,11 @@
         .then(res => res.json())
         .then(data => {
             if (data.user) {
-                document.getElementById('userInfo').innerHTML = `
-                    <strong>👋 Bienvenido:</strong> ${data.user.nombres} ${data.user.apellidos}<br>
-                    <strong>📧 Email:</strong> ${data.user.correo}<br>
-                    <strong>🎭 Rol:</strong> ${data.user.rol.nombre}
-                `;
+                document.getElementById('userName').innerHTML = `👋 Bienvenido, ${data.user.nombres} ${data.user.apellidos}`;
+                document.getElementById('userEmail').innerHTML = `📧 ${data.user.correo}`;
+                document.getElementById('userRol').innerHTML = `<i class="fas fa-tag"></i> Rol: <strong>${data.user.rol.nombre}</strong>`;
             } else {
-                document.getElementById('userInfo').innerHTML = '<span style="color: red;">❌ Error al cargar datos</span>';
+                document.querySelector('.info-card').innerHTML = '<span style="color: red;">❌ Error al cargar datos</span>';
             }
         })
         .catch(() => {

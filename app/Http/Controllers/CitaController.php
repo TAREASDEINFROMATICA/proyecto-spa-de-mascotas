@@ -263,25 +263,42 @@ class CitaController extends Controller
      * Cliente ve sus citas
      */
     public function misCitas(Request $request)
-    {
-        $user = $this->getUserFromToken($request);
-        
-        if (!$user || !$user->esCliente()) {
-            return redirect('/')->with('error', 'No autorizado');
-        }
-        
-        $mascotasIds = Mascota::where('id_cliente', $user->cliente->id_cliente)->pluck('id_mascota');
-        
-        $citas = Cita::whereIn('id_mascota', $mascotasIds)
-            ->with(['mascota', 'servicio', 'empleado.usuario'])
-            ->orderBy('fecha', 'desc')
-            ->get();
-        
-        $token = $request->query('token');
-        
-        return view('cliente.mis-citas', compact('citas', 'token'));
+{
+    $user = $this->getUserFromToken($request);
+    
+    if (!$user || !$user->esCliente()) {
+        return redirect('/')->with('error', 'No autorizado');
     }
-
+    
+    $mascotasIds = Mascota::where('id_cliente', $user->cliente->id_cliente)->pluck('id_mascota');
+    
+    // Citas ACTIVAS (reservado, programado) - NO concluidas
+    $citas = Cita::whereIn('id_mascota', $mascotasIds)
+        ->whereIn('estado', ['reservado', 'programado'])
+        ->with(['mascota', 'servicio', 'empleado.usuario'])
+        ->orderBy('fecha', 'desc')
+        ->get();
+    
+    // Citas CONCLUIDAS y SIN CALIFICAR
+    $citasPorCalificar = Cita::whereIn('id_mascota', $mascotasIds)
+        ->where('estado', 'concluido')
+        ->whereDoesntHave('calificacion')
+        ->with(['mascota', 'servicio', 'empleado.usuario'])
+        ->orderBy('fecha', 'desc')
+        ->get();
+    
+    // Citas ya CALIFICADAS (historial)
+    $citasCalificadas = Cita::whereIn('id_mascota', $mascotasIds)
+        ->where('estado', 'concluido')
+        ->whereHas('calificacion')
+        ->with(['mascota', 'servicio', 'empleado.usuario', 'calificacion'])
+        ->orderBy('fecha', 'desc')
+        ->get();
+    
+    $token = $request->query('token');
+    
+    return view('cliente.mis-citas', compact('citas', 'citasPorCalificar', 'citasCalificadas', 'token'));
+}
    
 
     /**
@@ -553,4 +570,5 @@ public function clienteCancelar(Request $request, $id)
     
     return response()->json(['success' => true, 'message' => 'Cita cancelada correctamente']);
 }
+
 }

@@ -16,7 +16,8 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Log;
 use App\Models\InsumoTratamiento;
 use App\Models\ConsumoInsumoCita;
-
+use App\Models\Calificacion;
+use Illuminate\Support\Facades\DB;
 
 class GroomerController extends Controller
 {
@@ -581,5 +582,206 @@ public function misConsumos(Request $request)
         'consumos' => $resultados
     ]);
 }
+
+
+
+
+// =========================================================
+// DASHBOARD MEJORADO CON ESTADÍSTICAS
+// =========================================================
+public function dashboard(Request $request)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Groomer') {
+        return redirect('/');
+    }
+    
+    $empleadoId = $this->getEmpleadoId($user);
+    $token = $request->query('token');
+    
+    // Estadísticas generales
+    $totalCitas = Cita::where('id_empleado', $empleadoId)->count();
+    $citasConcluidas = Cita::where('id_empleado', $empleadoId)->where('estado', 'concluido')->count();
+    $citasPendientes = Cita::where('id_empleado', $empleadoId)->whereIn('estado', ['programado', 'reservado'])->count();
+    $citasHoy = Cita::where('id_empleado', $empleadoId)
+        ->where('fecha', now()->toDateString())
+        ->whereIn('estado', ['programado', 'reservado'])
+        ->count();
+    
+    // Calificación promedio
+    $promedioCalificacion = Calificacion::whereHas('cita', function($q) use ($empleadoId) {
+        $q->where('id_empleado', $empleadoId);
+    })->avg('puntuacion');
+    
+    // Últimas calificaciones
+    $ultimasCalificaciones = Calificacion::with(['cita.mascota', 'cita.servicio'])
+        ->whereHas('cita', function($q) use ($empleadoId) {
+            $q->where('id_empleado', $empleadoId);
+        })
+        ->orderBy('fecha_calificacion', 'desc')
+        ->limit(5)
+        ->get();
+    
+    // Citas de hoy
+    $citasDelDia = Cita::where('id_empleado', $empleadoId)
+        ->where('fecha', now()->toDateString())
+        ->whereIn('estado', ['programado', 'reservado'])
+        ->with(['mascota', 'servicio'])
+        ->orderBy('hora_inicio')
+        ->get();
+    
+    // Próximas citas
+    $proximasCitas = Cita::where('id_empleado', $empleadoId)
+        ->where('fecha', '>', now()->toDateString())
+        ->whereIn('estado', ['programado', 'reservado'])
+        ->with(['mascota', 'servicio'])
+        ->orderBy('fecha')
+        ->orderBy('hora_inicio')
+        ->limit(10)
+        ->get();
+    
+    // Alertas de stock bajo
+    $stockBajo = \App\Models\InsumoTratamiento::where('estado', 'activo')
+        ->whereColumn('stock', '<=', 'stock_minimo')
+        ->get();
+    
+    return view('personal.groomer.dashboard', compact(
+        'token', 'totalCitas', 'citasConcluidas', 'citasPendientes', 'citasHoy',
+        'promedioCalificacion', 'ultimasCalificaciones', 'citasDelDia',
+        'proximasCitas', 'stockBajo'
+    ));
+}
+
+// =========================================================
+// MIS CALIFICACIONES
+// =========================================================
+public function misCalificaciones(Request $request)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Groomer') {
+        return redirect('/');
+    }
+    
+    $empleadoId = $this->getEmpleadoId($user);
+    $token = $request->query('token');
+    
+    $calificaciones = Calificacion::with(['cita.mascota', 'cita.servicio'])
+        ->whereHas('cita', function($q) use ($empleadoId) {
+            $q->where('id_empleado', $empleadoId);
+        })
+        ->orderBy('fecha_calificacion', 'desc')
+        ->paginate(15);
+    
+    $promedio = $calificaciones->avg('puntuacion');
+    $total = $calificaciones->total();
+    
+    return view('personal.groomer.mis-calificaciones', compact('token', 'calificaciones', 'promedio', 'total'));
+}
+
+// =========================================================
+// EXPORTAR SERVICIOS A CSV
+// =========================================================
+public function exportarServiciosCSV(Request $request)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Groomer') {
+        return redirect('/');
+    }
+    
+    $empleadoId = $this->getEmpleadoId($user);
+    
+    $citas = Cita::where('id_empleado', $empleadoId)
+        ->where('estado', 'concluido')
+        ->with(['mascota', 'servicio', 'calificacion'])
+        ->orderBy('fecha', 'desc')
+        ->get();
+    
+    $filename = 'mis_servicios_' . date('Y-m-d') . '.csv';
+    
+    $handle = fopen('php://memory', 'w');
+    
+    // UTF-8 BOM para acentos
+    fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+    
+    // Encabezados
+    fputcsv($handle, ['Fecha', 'Mascota', 'Servicio', 'Calificación', 'Comentario']);
+    
+    // Datos
+    foreach ($citas as $cita) {
+        fputcsv($handle, [
+            $cita->fecha,
+            $cita->mascota->nombre ?? 'N/A',
+            $cita->servicio->nombre ?? 'N/A',
+            $cita->calificacion->puntuacion ?? 'Sin calificar',
+            $cita->calificacion->comentario ?? ''
+        ]);
+    }
+    
+    rewind($handle);
+    $csv = stream_get_contents($handle);
+    fclose($handle);
+    
+    return response($csv, 200)
+        ->header('Content-Type', 'text/csv; charset=UTF-8')
+        ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+}
+
+// =========================================================
+// MIS ESTADÍSTICAS (Metas personales)
+// =========================================================
+public function misEstadisticas(Request $request)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Groomer') {
+        return redirect('/');
+    }
+    
+    $empleadoId = $this->getEmpleadoId($user);
+    $token = $request->query('token');
+    
+    // Meta del mes
+    $metaMensual = 20;
+    $citasEsteMes = Cita::where('id_empleado', $empleadoId)
+        ->where('estado', 'concluido')
+        ->whereMonth('fecha', now()->month)
+        ->whereYear('fecha', now()->year)
+        ->count();
+    
+    // Asegurar que sea un número entero
+    $progresoMeta = (int) min(100, round(($citasEsteMes / $metaMensual) * 100));
+    
+    // Estadísticas por mes
+    $estadisticasPorMes = DB::table('citas')
+        ->where('id_empleado', $empleadoId)
+        ->where('estado', 'concluido')
+        ->selectRaw('DATE_TRUNC(\'month\', fecha) as mes, COUNT(*) as total')
+        ->groupBy('mes')
+        ->orderBy('mes', 'desc')
+        ->limit(12)
+        ->get();
+    
+    // Servicios más realizados
+    $serviciosTop = DB::table('citas')
+        ->where('id_empleado', $empleadoId)
+        ->where('estado', 'concluido')
+        ->select('id_servicio', DB::raw('COUNT(*) as total'))
+        ->groupBy('id_servicio')
+        ->orderBy('total', 'desc')
+        ->limit(5)
+        ->get();
+    
+    // Cargar nombres de servicios
+    foreach ($serviciosTop as $item) {
+        $servicio = Servicio::find($item->id_servicio);
+        $item->servicio = $servicio;
+        $item->nombre = $servicio->nombre ?? 'Desconocido';
+    }
+    
+    return view('personal.groomer.mis-estadisticas', compact(
+        'token', 'estadisticasPorMes', 'serviciosTop', 
+        'metaMensual', 'citasEsteMes', 'progresoMeta'
+    ));
+}
+
 
 }

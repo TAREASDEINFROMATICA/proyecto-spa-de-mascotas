@@ -6,11 +6,12 @@
         body { font-family: Arial; margin: 50px; background: #e8f5e9; }
         .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 10px; }
         h1 { color: #4CAF50; }
+        h2 { color: #2196F3; margin-top: 20px; }
         button { background: red; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
         .info { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; }
         ul { list-style: none; padding: 0; }
         li { margin: 15px 0; }
-        a { text-decoration: none; background: #2196F3; color: white; padding: 10px 15px; border-radius: 5px; display: inline-block; width: 200px; text-align: center; }
+        a { text-decoration: none; background: #2196F3; color: white; padding: 10px 15px; border-radius: 5px; display: inline-block; width: 220px; text-align: center; }
         a:hover { background: #0b7dda; }
         .btn-cambiar { background: #FF9800; margin-top: 15px; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; }
         
@@ -84,6 +85,13 @@
         .mensaje { margin-top: 10px; padding: 10px; border-radius: 5px; font-size: 14px; }
         .mensaje.exito { background: #d4edda; color: #155724; }
         .mensaje.error { background: #f8d7da; color: #721c24; }
+        hr { margin: 20px 0; }
+        .btn-reporte { background: #9C27B0; width: 220px; }
+        .btn-reporte:hover { background: #7B1FA2; }
+        .btn-exportar { background: #f44336; width: 220px; }
+        .btn-exportar:hover { background: #d32f2f; }
+        .btn-calificacion { background: #ff9800; width: 220px; }
+        .btn-calificacion:hover { background: #f57c00; }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -102,6 +110,13 @@
             <li><a href="#" id="enlaceChecklist">✅ Checklist de Servicios</a></li>
             <li><a href="#" id="enlaceGaleria">📸 Galería de Fotos</a></li>
             <li><a href="#" id="enlaceInsumos">📦 Mis Insumos</a></li>
+        </ul>
+        
+        <h2>📊 Reportes y Estadísticas</h2>
+        <ul>
+            <li><a href="#" id="enlaceCalificaciones" class="btn-calificacion">⭐ Mis Calificaciones</a></li>
+            <li><a href="#" id="enlaceEstadisticas" class="btn-reporte">📈 Mis Estadísticas</a></li>
+            <a href="#" id="enlaceExportarCSV" class="btn-exportar">📄 Exportar Servicios (CSV)</a>
         </ul>
         
         <button class="btn-cambiar" onclick="abrirModal()">🔒 Cambiar Contraseña</button>
@@ -145,31 +160,32 @@
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/';
 
-        // Crear enlaces con token
-        const enlaceMisCitas = document.getElementById('enlaceMisCitas');
-        if (enlaceMisCitas) {
-            enlaceMisCitas.href = '/groomer/mis-citas?token=' + token;
+        // Función para crear enlaces con token
+        function crearEnlace(id, url) {
+            const enlace = document.getElementById(id);
+            if (enlace) {
+                enlace.href = url + '?token=' + token;
+                console.log(`Enlace creado: ${id} -> ${enlace.href}`);
+            } else {
+                console.warn(`Elemento no encontrado: ${id}`);
+            }
         }
+
+        // =========================================================
+        // MENÚ PRINCIPAL
+        // =========================================================
+        crearEnlace('enlaceMisCitas', '/groomer/mis-citas');
+        crearEnlace('enlaceMisMascotas', '/groomer/mis-mascotas');
+        crearEnlace('enlaceChecklist', '/groomer/checklist');
+        crearEnlace('enlaceGaleria', '/groomer/galeria');
+        crearEnlace('enlaceInsumos', '/groomer/insumos');
         
-        const enlaceMisMascotas = document.getElementById('enlaceMisMascotas');
-        if (enlaceMisMascotas) {
-            enlaceMisMascotas.href = '/groomer/mis-mascotas?token=' + token;
-        }
-        
-        const enlaceChecklist = document.getElementById('enlaceChecklist');
-        if (enlaceChecklist) {
-            enlaceChecklist.href = '/groomer/checklist?token=' + token;
-        }
-        
-        const enlaceGaleria = document.getElementById('enlaceGaleria');
-        if (enlaceGaleria) {
-            enlaceGaleria.href = '/groomer/galeria?token=' + token;
-        }
-        
-        const enlaceInsumos = document.getElementById('enlaceInsumos');
-        if (enlaceInsumos) {
-            enlaceInsumos.href = '/groomer/insumos?token=' + token;
-        }
+        // =========================================================
+        // REPORTES Y ESTADÍSTICAS (NUEVOS)
+        // =========================================================
+        crearEnlace('enlaceCalificaciones', '/groomer/mis-calificaciones');
+        crearEnlace('enlaceEstadisticas', '/groomer/mis-estadisticas');
+        crearEnlace('enlaceExportarCSV', '/groomer/exportar-csv');
 
         function togglePassword(id) {
             const input = document.getElementById(id);
@@ -198,6 +214,7 @@
             
             const fill = document.getElementById('strengthFill');
             const text = document.getElementById('strengthText');
+            fill.style.width = (strength * 25) + '%';
             if (strength <= 2) {
                 fill.className = 'strength-meter-fill weak';
                 text.innerHTML = '🔴 Contraseña débil';
