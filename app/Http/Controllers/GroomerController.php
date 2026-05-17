@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Log;
+use App\Models\InsumoTratamiento;
+use App\Models\ConsumoInsumoCita;
+
 
 class GroomerController extends Controller
 {
@@ -404,4 +407,179 @@ class GroomerController extends Controller
         
         return response()->json(['success' => true, 'message' => 'Progreso guardado correctamente']);
     }
+
+
+// =========================================================
+// REGISTRAR CONSUMO DE INSUMOS
+// =========================================================
+// =========================================================
+// REGISTRAR CONSUMO DE INSUMOS (GROOMER)
+// =========================================================
+public function registrarConsumoInsumo(Request $request, $citaId)
+{
+    try {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Groomer') {
+            return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+        }
+        
+        $empleadoId = $this->getEmpleadoId($user);
+        $cita = Cita::where('id_empleado', $empleadoId)
+            ->where('id_cita', $citaId)
+            ->first();
+        
+        if (!$cita) {
+            return response()->json(['success' => false, 'message' => 'Cita no encontrada'], 404);
+        }
+        
+        if ($cita->estado === 'concluido') {
+            return response()->json(['success' => false, 'message' => 'Este servicio ya está cerrado'], 400);
+        }
+        
+        $request->validate([
+            'insumos' => 'required|array',
+            'insumos.*.id_insumo' => 'required|exists:insumos_tratamiento,id_insumo',
+            'insumos.*.cantidad' => 'required|numeric|min:0.01'
+        ]);
+        
+        $resultados = [];
+        
+        foreach ($request->insumos as $item) {
+            $insumo = InsumoTratamiento::find($item['id_insumo']);
+            
+            if (!$insumo) {
+                $resultados[] = [
+                    'id_insumo' => $item['id_insumo'],
+                    'success' => false,
+                    'message' => 'Insumo no encontrado'
+                ];
+                continue;
+            }
+            
+            if ($insumo->stock < $item['cantidad']) {
+                $resultados[] = [
+                    'id_insumo' => $item['id_insumo'],
+                    'success' => false,
+                    'message' => "Stock insuficiente. Disponible: {$insumo->stock} {$insumo->unidad_medida}"
+                ];
+                continue;
+            }
+            
+            // Registrar consumo
+            ConsumoInsumoCita::create([
+                'id_cita' => $citaId,
+                'id_insumo' => $item['id_insumo'],
+                'cantidad_usada' => $item['cantidad']
+            ]);
+            
+            // Descontar stock
+            $insumo->stock -= $item['cantidad'];
+            $insumo->save();
+            
+            $resultados[] = [
+                'id_insumo' => $item['id_insumo'],
+                'success' => true,
+                'message' => "Consumido {$item['cantidad']} {$insumo->unidad_medida} de {$insumo->nombre}"
+            ];
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Consumo registrado',
+            'resultados' => $resultados
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+// =========================================================
+// OBTENER INSUMOS DISPONIBLES
+// =========================================================
+public function getInsumosDisponibles(Request $request)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Groomer') {
+        return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+    }
+    
+    $insumos = InsumoTratamiento::where('estado', 'activo')
+        ->where('stock', '>', 0)
+        ->orderBy('nombre')
+        ->get(['id_insumo', 'nombre', 'stock', 'unidad_medida']);
+    
+    return response()->json([
+        'success' => true,
+        'insumos' => $insumos
+    ]);
+}
+// =========================================================
+// OBTENER CONSUMOS DE UNA CITA
+// =========================================================
+public function getConsumosByCita(Request $request, $citaId)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Groomer') {
+        return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+    }
+    
+    $consumos = ConsumoInsumoCita::with('insumo')
+        ->where('id_cita', $citaId)
+        ->get();
+    
+    return response()->json([
+        'success' => true,
+        'consumos' => $consumos
+    ]);
+}
+// =========================================================
+// MIS CONSUMOS (HISTORIAL)
+// =========================================================
+public function misConsumos(Request $request)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Groomer') {
+        return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+    }
+    
+    $empleadoId = $this->getEmpleadoId($user);
+    
+    $query = ConsumoInsumoCita::with(['cita.mascota', 'cita.servicio', 'insumo'])
+        ->whereHas('cita', function($q) use ($empleadoId) {
+            $q->where('id_empleado', $empleadoId);
+        });
+    
+    // Filtrar por fechas
+    if ($request->fecha_inicio) {
+        $query->whereHas('cita', function($q) use ($request) {
+            $q->whereDate('fecha', '>=', $request->fecha_inicio);
+        });
+    }
+    if ($request->fecha_fin) {
+        $query->whereHas('cita', function($q) use ($request) {
+            $q->whereDate('fecha', '<=', $request->fecha_fin);
+        });
+    }
+    
+    $consumos = $query->orderBy('id_consumo', 'desc')->get();
+    
+    $resultados = [];
+    foreach ($consumos as $consumo) {
+        $resultados[] = [
+            'id_consumo' => $consumo->id_consumo,
+            'fecha' => $consumo->cita->fecha ?? null,
+            'mascota_nombre' => $consumo->cita->mascota->nombre ?? null,
+            'servicio_nombre' => $consumo->cita->servicio->nombre ?? null,
+            'insumo_nombre' => $consumo->insumo->nombre,
+            'cantidad_usada' => $consumo->cantidad_usada,
+            'unidad_medida' => $consumo->insumo->unidad_medida
+        ];
+    }
+    
+    return response()->json([
+        'success' => true,
+        'consumos' => $resultados
+    ]);
+}
+
 }

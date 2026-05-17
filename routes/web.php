@@ -19,6 +19,7 @@ use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\GroomerController;
+use App\Http\Controllers\InsumoController;
 
 
 // Redirigir cuando no hay autenticación
@@ -722,3 +723,329 @@ Route::post('/groomer/guardar-progreso/{citaId}', function ($citaId) {
     $controller = new GroomerController();
     return $controller->guardarProgreso(request(), $citaId);
 })->name('groomer.guardar-progreso');
+
+
+// Groomer - Insumos disponibles
+Route::get('/groomer/insumos-disponibles', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->getInsumosDisponibles(request());
+})->name('groomer.insumos.disponibles');
+
+// Groomer - Registrar consumo de insumos
+Route::post('/groomer/consumo-insumos/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->registrarConsumoInsumo(request(), $citaId);
+})->name('groomer.consumo.insumos');
+
+// Groomer - Ver consumos de una cita
+Route::get('/groomer/consumos-cita/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->getConsumosByCita(request(), $citaId);
+})->name('groomer.consumos.cita');
+
+// Groomer - Mis consumos (historial)
+Route::get('/groomer/mis-consumos', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new GroomerController();
+    return $controller->misConsumos(request());
+})->name('groomer.mis.consumos');
+
+
+// =========================================================
+// ADMIN - GESTIÓN DE INSUMOS
+// =========================================================
+Route::get('/admin/insumos', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\InsumoController();
+    return $controller->index(request());
+})->name('admin.insumos.index');
+
+Route::get('/admin/insumos/create', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\InsumoController();
+    return $controller->create(request());
+})->name('admin.insumos.create');
+
+Route::post('/admin/insumos', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\InsumoController();
+    return $controller->store(request());
+})->name('admin.insumos.store');
+
+Route::get('/admin/insumos/{id}/edit', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\InsumoController();
+    return $controller->edit(request(), $id);
+})->name('admin.insumos.edit');
+
+Route::put('/admin/insumos/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\InsumoController();
+    return $controller->update(request(), $id);
+})->name('admin.insumos.update');
+
+Route::post('/admin/insumos/{id}/ajustar-stock', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\InsumoController();
+    return $controller->ajustarStock(request(), $id);
+})->name('admin.insumos.ajustar');
+
+Route::get('/admin/insumos/{id}/toggle', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\InsumoController();
+    return $controller->toggleEstado(request(), $id);
+})->name('admin.insumos.toggle');
+
+// =========================================================
+// ADMIN - GESTIÓN DE PRODUCTOS (TIENDA)
+// =========================================================
+Route::get('/admin/productos', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ProductoVentaController();
+    return $controller->index(request());
+})->name('admin.productos.index');
+
+Route::get('/admin/productos/create', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ProductoVentaController();
+    return $controller->create(request());
+})->name('admin.productos.create');
+
+Route::post('/admin/productos', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ProductoVentaController();
+    return $controller->store(request());
+})->name('admin.productos.store');
+
+Route::get('/admin/productos/{id}/edit', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ProductoVentaController();
+    return $controller->edit(request(), $id);
+})->name('admin.productos.edit');
+
+Route::put('/admin/productos/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ProductoVentaController();
+    return $controller->update(request(), $id);
+})->name('admin.productos.update');
+
+Route::get('/admin/productos/{id}/toggle', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ProductoVentaController();
+    return $controller->toggleEstado(request(), $id);
+})->name('admin.productos.toggle');
+
+// =========================================================
+// GROOMER - CONSUMO DE INSUMOS
+// =========================================================
+Route::post('/groomer/consumo-insumos/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\GroomerController();
+    return $controller->registrarConsumoInsumo(request(), $citaId);
+})->name('groomer.consumo.insumos');
+
+// =========================================================
+// GROOMER - INSUMOS DISPONIBLES (para el select)
+// =========================================================
+Route::get('/groomer/insumos-disponibles', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\GroomerController();
+    return $controller->getInsumosDisponibles(request());
+})->name('groomer.insumos.disponibles');
+
+// =========================================================
+// GROOMER - MIS CONSUMOS (historial)
+// =========================================================
+Route::get('/groomer/mis-consumos', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\GroomerController();
+    return $controller->misConsumos(request());
+})->name('groomer.mis.consumos');
+
+// =========================================================
+// GROOMER - CONSUMOS POR CITA
+// =========================================================
+Route::get('/groomer/consumos-cita/{citaId}', function ($citaId) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\GroomerController();
+    return $controller->getConsumosByCita(request(), $citaId);
+})->name('groomer.consumos.cita');
+
+// =========================================================
+// ADMIN - REPORTES Y VENTAS
+// =========================================================
+Route::get('/admin/reportes', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    return view('admin.reportes', ['token' => $token]);
+})->name('admin.reportes');
+
+Route::get('/admin/ventas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    return view('admin.ventas', ['token' => $token]);
+})->name('admin.ventas');
+
+Route::get('/admin/alertas-stock', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    return view('admin.alertas-stock', ['token' => $token]);
+})->name('admin.alertas-stock');
+
+Route::get('/admin/citas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    return view('admin.citas', ['token' => $token]);
+})->name('admin.citas');
+
+
+// =========================================================
+// ADMIN - GESTIÓN DE CATEGORÍAS DE PRODUCTOS
+// =========================================================
+Route::get('/admin/categorias', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CategoriaProductoController();
+    return $controller->index(request());
+})->name('admin.categorias.index');
+
+Route::get('/admin/categorias/create', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CategoriaProductoController();
+    return $controller->create(request());
+})->name('admin.categorias.create');
+
+Route::post('/admin/categorias', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CategoriaProductoController();
+    return $controller->store(request());
+})->name('admin.categorias.store');
+
+Route::get('/admin/categorias/{id}/edit', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CategoriaProductoController();
+    return $controller->edit(request(), $id);
+})->name('admin.categorias.edit');
+
+Route::put('/admin/categorias/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CategoriaProductoController();
+    return $controller->update(request(), $id);
+})->name('admin.categorias.update');
+
+Route::delete('/admin/categorias/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CategoriaProductoController();
+    return $controller->destroy(request(), $id);
+})->name('admin.categorias.destroy');
+
+// Para INSUMOS - Guardar imagen después
+Route::post('/admin/insumos/{id}/imagen', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\InsumoController();
+    return $controller->guardarImagen(request(), $id);
+})->name('admin.insumos.imagen');
+
+// Para PRODUCTOS - Guardar imagen después
+Route::post('/admin/productos/{id}/imagen', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ProductoVentaController();
+    return $controller->guardarImagen(request(), $id);
+})->name('admin.productos.imagen');
