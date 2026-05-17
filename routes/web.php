@@ -948,13 +948,7 @@ Route::get('/admin/reportes', function () {
     return view('admin.reportes', ['token' => $token]);
 })->name('admin.reportes');
 
-Route::get('/admin/ventas', function () {
-    $token = request()->query('token');
-    if ($token) {
-        request()->headers->set('Authorization', 'Bearer ' . $token);
-    }
-    return view('admin.ventas', ['token' => $token]);
-})->name('admin.ventas');
+
 
 Route::get('/admin/alertas-stock', function () {
     $token = request()->query('token');
@@ -1143,3 +1137,87 @@ Route::get('/api/productos/buscar', function () {
     $controller = new \App\Http\Controllers\VentaController();
     return $controller->buscarProductos(request());
 })->name('api.productos.buscar');
+
+// =========================================================
+// CLIENTE - TIENDA (CARRITO Y COMPRAS)
+// =========================================================
+Route::get('/cliente/tienda', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->catalogo(request());
+})->name('cliente.catalogo');
+
+Route::get('/cliente/carrito', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->verCarrito(request());
+})->name('cliente.carrito');
+
+Route::post('/cliente/carrito/agregar', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->agregarCarrito(request());
+})->name('cliente.carrito.agregar');
+
+Route::post('/cliente/carrito/actualizar', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->actualizarCarrito(request());
+})->name('cliente.carrito.actualizar');
+
+Route::get('/cliente/carrito/eliminar/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->eliminarCarrito(request(), $id);
+})->name('cliente.carrito.eliminar');
+
+Route::get('/cliente/checkout', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->checkout(request());
+})->name('cliente.checkout');
+
+Route::post('/cliente/procesar-pago', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->procesarPago(request());
+})->name('cliente.procesar.pago');
+
+Route::get('/cliente/mis-compras', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->misCompras(request());
+})->name('cliente.mis-compras');
+
+Route::get('/cliente/mis-compras/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ClienteTiendaController();
+    return $controller->detalleCompra(request(), $id);
+})->name('cliente.detalle-compra');
