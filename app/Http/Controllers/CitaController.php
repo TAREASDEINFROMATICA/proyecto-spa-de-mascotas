@@ -304,28 +304,35 @@ class CitaController extends Controller
     /**
      * Recepción/Admin confirma cita
      */
-    public function confirmarCita(Request $request, $id)
-    {
-        $user = $this->getUserFromToken($request);
-        
-        if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
-            return redirect('/')->with('error', 'No autorizado');
-        }
-        
-        $cita = Cita::findOrFail($id);
-        $cita->estado = 'programado';
-        $cita->save();
-        
-        AuditLogService::registrar(
-            $user->id_usuario,
-            'Confirmó cita ID: ' . $id,
-            $request
-        );
-        
-        $token = $request->query('token');
-        return redirect('/personal/citas-pendientes?token=' . $token)
-            ->with('success', '✅ Cita confirmada correctamente');
+    /**
+ * Recepción/Admin confirma cita
+ */
+public function confirmarCita(Request $request, $id)
+{
+    $user = $this->getUserFromToken($request);
+    
+    if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
+        return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
     }
+    
+    $cita = Cita::findOrFail($id);
+    
+    // Solo se puede confirmar si está en estado 'reservado'
+    if ($cita->estado != 'reservado') {
+        return response()->json(['success' => false, 'message' => 'Esta cita no está pendiente de confirmación'], 400);
+    }
+    
+    $cita->estado = 'programado';
+    $cita->save();
+    
+    \App\Services\AuditLogService::registrar(
+        $user->id_usuario,
+        'Confirmó cita ID: ' . $id,
+        $request
+    );
+    
+    return response()->json(['success' => true, 'message' => 'Cita confirmada correctamente']);
+}
 
     /**
      * Agenda maestra (Admin y Recepción)
@@ -570,5 +577,36 @@ public function clienteCancelar(Request $request, $id)
     
     return response()->json(['success' => true, 'message' => 'Cita cancelada correctamente']);
 }
-
+// =========================================================
+// ADMIN - VER TODAS LAS CITAS
+// =========================================================
+public function todasCitas(Request $request)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Administrador') {
+        return redirect('/');
+    }
+    
+    $token = $request->query('token');
+    
+    // Obtener todas las citas con relaciones
+    $citas = Cita::with(['mascota', 'servicio', 'empleado.usuario'])
+        ->orderBy('fecha', 'desc')
+        ->orderBy('hora_inicio', 'asc')
+        ->paginate(20);
+    
+    // Estadísticas para resumen
+    $totalCitas = Cita::count();
+    $citasHoy = Cita::whereDate('fecha', today())->count();
+    $citasPendientes = Cita::where('estado', 'reservado')->count();
+    $citasProgramadas = Cita::where('estado', 'programado')->count();
+    $citasConcluidas = Cita::where('estado', 'concluido')->count();
+    $citasCanceladas = Cita::where('estado', 'cancelado')->count();
+    
+    return view('admin.citas.todas', compact(
+        'citas', 'token', 'totalCitas', 'citasHoy',
+        'citasPendientes', 'citasProgramadas', 
+        'citasConcluidas', 'citasCanceladas'
+    ));
+}
 }

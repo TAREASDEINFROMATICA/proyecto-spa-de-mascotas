@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -21,7 +22,7 @@
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 24px;
@@ -170,6 +171,63 @@
             background: linear-gradient(to right, #e0e0e0, transparent);
         }
         
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 30px; 
+        }
+        
+        .stat-card { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            transition: transform 0.3s; 
+        }
+        
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+        }
+        
+        .stat-card .icon { 
+            font-size: 32px; 
+            margin-bottom: 10px; 
+        }
+        
+        .stat-card .value { 
+            font-size: 28px; 
+            font-weight: 700; 
+        }
+        
+        .stat-card .label { 
+            color: #666; 
+            font-size: 14px; 
+            margin-top: 5px; 
+        }
+        
+        .charts-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); 
+            gap: 30px; 
+            margin: 30px 0; 
+        }
+        
+        .chart-card { 
+            background: #f8f9fa; 
+            border-radius: 16px; 
+            padding: 20px; 
+        }
+        
+        .chart-card h3 { 
+            margin-bottom: 15px; 
+            color: #333; 
+        }
+        
+        canvas { 
+            max-height: 300px; 
+        }
+        
         @media (max-width: 640px) {
             .menu-grid {
                 grid-template-columns: 1fr;
@@ -177,6 +235,12 @@
             .info-card {
                 flex-direction: column;
                 text-align: center;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -192,6 +256,57 @@
         </div>
         
         <div class="content">
+            <!-- ========================================================= -->
+            <!-- ESTADÍSTICAS - TARJETAS -->
+            <!-- ========================================================= -->
+            <div class="stats-grid">
+                <div class="stat-card" style="border-left: 4px solid #4CAF50;">
+                    <div class="icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="value">Bs {{ number_format($ventasHoy ?? 0, 2) }}</div>
+                    <div class="label">Ventas de hoy</div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #4CAF50;">
+                    <div class="icon"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="value">Bs {{ number_format($ventasMes ?? 0, 2) }}</div>
+                    <div class="label">Ventas del mes</div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #4CAF50;">
+                    <div class="icon"><i class="fas fa-chart-bar"></i></div>
+                    <div class="value">Bs {{ number_format($ventasTotales ?? 0, 2) }}</div>
+                    <div class="label">Ventas totales</div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #2196F3;">
+                    <div class="icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="value">{{ $citasHoy ?? 0 }}</div>
+                    <div class="label">Citas hoy</div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #2196F3;">
+                    <div class="icon"><i class="fas fa-clock"></i></div>
+                    <div class="value">{{ $citasPendientes ?? 0 }}</div>
+                    <div class="label">Citas pendientes</div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #2196F3;">
+                    <div class="icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="value">{{ $citasConfirmadas ?? 0 }}</div>
+                    <div class="label">Citas confirmadas</div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #2196F3;">
+                    <div class="icon"><i class="fas fa-check-double"></i></div>
+                    <div class="value">{{ $citasConcluidas ?? 0 }}</div>
+                    <div class="label">Citas concluidas</div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #ff9800;">
+                    <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="value">{{ ($productosStockBajo ?? 0) + ($insumosStockBajo ?? 0) }}</div>
+                    <div class="label">Alertas de stock bajo</div>
+                </div>
+            </div>
+
+           
+            
+            <!-- ========================================================= -->
+            <!-- INFO USUARIO -->
+            <!-- ========================================================= -->
             <div class="info-card">
                 <i class="fas fa-user-circle"></i>
                 <div class="info-text">
@@ -201,6 +316,9 @@
                 </div>
             </div>
             
+            <!-- ========================================================= -->
+            <!-- MENÚ PRINCIPAL -->
+            <!-- ========================================================= -->
             <h2><i class="fas fa-tachometer-alt"></i> Gestión Principal</h2>
             <div class="menu-grid">
                 <div class="menu-item"><a href="#" id="enlaceEstadisticas"><i class="fas fa-chart-line"></i> Ver estadísticas</a></div>
@@ -267,13 +385,13 @@
         crearEnlace('enlaceEmpleados', '/admin/empleados');
         crearEnlace('enlaceServicios', '/admin/servicios');
         crearEnlace('enlaceAgenda', '/admin/agenda');
-        crearEnlace('enlaceCitas', '/admin/citas');
+        crearEnlace('enlaceCitas', '/admin/citas/todas');
         
         // =========================================================
         // VENTAS Y FINANZAS
         // =========================================================
-        crearEnlace('enlaceReportes', '/admin/reportes');
-        crearEnlace('enlaceVentas', '/admin/ventas');  // ← NUEVO BOTÓN
+        crearEnlace('enlaceReportes', '/admin/reportes-financieros');
+        crearEnlace('enlaceVentas', '/admin/ventas');
         
         // =========================================================
         // INVENTARIO
@@ -281,7 +399,7 @@
         crearEnlace('enlaceInsumos', '/admin/insumos');
         crearEnlace('enlaceProductos', '/admin/productos');
         crearEnlace('enlaceCategorias', '/admin/categorias');
-        crearEnlace('enlaceAlertasStock', '/admin/alertas-stock');
+crearEnlace('enlaceAlertasStock', '/admin/alertas-stock');
         
         // =========================================================
         // GESTIÓN DE USUARIOS
@@ -326,8 +444,13 @@
                 window.location.href = '/';
             });
         }
+        
+        // =========================================================
+        // GRÁFICOS
+        // =========================================================
+      
     </script>
-
+    
     <!-- ========================================================= -->
     <!-- SESIÓN POR INACTIVIDAD -->
     <!-- ========================================================= -->

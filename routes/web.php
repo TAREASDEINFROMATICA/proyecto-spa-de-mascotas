@@ -20,7 +20,7 @@ use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\GroomerController;
 use App\Http\Controllers\InsumoController;
-
+use App\Http\Controllers\AdminController;
 
 // Redirigir cuando no hay autenticación
 Route::get('/login', function () {
@@ -30,9 +30,6 @@ Route::get('/login', function () {
 // =========================================================
 // PÁGINAS PÚBLICAS
 // =========================================================
-Route::get('/', function () {
-    return view('test-login');
-});
 
 Route::get('/registro', [RegistroController::class, 'showForm']);
 
@@ -43,9 +40,7 @@ Route::get('/dashboard', function () {
     return view('test-login');
 });
 
-Route::get('/admin/dashboard', function () {
-    return view('admin.dashboard');
-})->name('admin.dashboard');
+Route::get('/admin/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('admin.dashboard');
 
 Route::get('/personal/dashboard', function () {
     return view('personal.dashboard');
@@ -529,6 +524,7 @@ Route::get('/personal/citas-pendientes', function () {
 })->name('personal.citas.pendientes');
 
 // Recepción confirma cita
+// Recepción confirma cita (cambia estado de reservado a programado)
 Route::post('/admin/citas/{id}/confirmar', function ($id) {
     $token = request()->query('token');
     if ($token) {
@@ -945,7 +941,8 @@ Route::get('/admin/reportes', function () {
     if ($token) {
         request()->headers->set('Authorization', 'Bearer ' . $token);
     }
-    return view('admin.reportes', ['token' => $token]);
+    $controller = new \App\Http\Controllers\ReporteController();
+    return $controller->financieros(request());
 })->name('admin.reportes');
 
 
@@ -955,7 +952,8 @@ Route::get('/admin/alertas-stock', function () {
     if ($token) {
         request()->headers->set('Authorization', 'Bearer ' . $token);
     }
-    return view('admin.alertas-stock', ['token' => $token]);
+    $controller = new \App\Http\Controllers\ReporteController();
+    return $controller->alertasStock(request());
 })->name('admin.alertas-stock');
 
 Route::get('/admin/citas', function () {
@@ -1221,3 +1219,37 @@ Route::get('/cliente/mis-compras/{id}', function ($id) {
     $controller = new \App\Http\Controllers\ClienteTiendaController();
     return $controller->detalleCompra(request(), $id);
 })->name('cliente.detalle-compra');
+
+// =========================================================
+// ADMIN - VER TODAS LAS CITAS
+// =========================================================
+Route::get('/admin/citas/todas', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\CitaController();
+    return $controller->todasCitas(request());
+})->name('admin.citas.todas');
+
+
+// =========================================================
+// ADMIN - REPORTES
+// =========================================================
+Route::get('/admin/reportes-financieros', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ReporteController();
+    return $controller->financieros(request());
+})->name('admin.reportes.financieros');
+
+Route::get('/admin/alertas-stock', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\ReporteController();
+    return $controller->alertasStock(request());
+})->name('admin.alertas.stock');
