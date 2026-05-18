@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Http\Request;
 use App\Models\Usuario;
+use Illuminate\Auth\log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -30,16 +31,54 @@ Route::get('/login', function () {
 // =========================================================
 // PÁGINAS PÚBLICAS
 // =========================================================
-
+// Página de login (raíz)
+Route::get('/', function () {
+    return view('test-login');
+});
 Route::get('/registro', [RegistroController::class, 'showForm']);
 
 // =========================================================
 // DASHBOARDS POR ROL
 // =========================================================
 Route::get('/dashboard', function () {
-    return view('test-login');
-});
-
+    $token = request()->query('token');
+    
+    if (!$token) {
+        return redirect('/');
+    }
+    
+    request()->headers->set('Authorization', 'Bearer ' . $token);
+    
+    try {
+        $tokenRecord = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+        if (!$tokenRecord) {
+            return redirect('/');
+        }
+        
+        $user = \App\Models\Usuario::find($tokenRecord->tokenable_id);
+        if (!$user) {
+            return redirect('/');
+        }
+        
+        $rol = $user->rol->nombre;
+        
+        if ($rol === 'Administrador') {
+            return redirect('/admin/dashboard?token=' . $token);
+        } elseif ($rol === 'Cliente') {
+            return redirect('/cliente/dashboard?token=' . $token);
+        } elseif ($rol === 'Groomer') {
+            return redirect('/groomer/dashboard?token=' . $token);
+        } elseif ($rol === 'Recepcion') {
+            return redirect('/recepcion/dashboard?token=' . $token);
+        }
+        
+        return redirect('/');
+        
+    } catch (\Exception $e) {
+       
+        return redirect('/');
+    }
+})->name('dashboard');
 Route::get('/admin/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('admin.dashboard');
 
 Route::get('/personal/dashboard', function () {
@@ -1253,3 +1292,35 @@ Route::get('/admin/alertas-stock', function () {
     $controller = new \App\Http\Controllers\ReporteController();
     return $controller->alertasStock(request());
 })->name('admin.alertas.stock');
+
+
+
+// =========================================================
+// NOTIFICACIONES
+// =========================================================
+Route::get('/mis-notificaciones', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\NotificacionController();
+    return $controller->misNotificaciones(request());
+})->name('notificaciones.index');
+
+Route::post('/notificaciones/{id}/leer', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\NotificacionController();
+    return $controller->marcarLeida(request(), $id);
+})->name('notificaciones.leer');
+
+Route::get('/notificaciones/count', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\NotificacionController();
+    return $controller->contarNoLeidas(request());
+})->name('notificaciones.count');

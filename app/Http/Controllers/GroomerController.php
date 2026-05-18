@@ -782,6 +782,34 @@ public function misEstadisticas(Request $request)
         'metaMensual', 'citasEsteMes', 'progresoMeta'
     ));
 }
-
+// =========================================================
+// NOTIFICACIONES (ENVIAR AL CLIENTE)
+// =========================================================
+private function enviarNotificacionCliente($cita, $tipo, $mensaje)
+{
+    try {
+        $cliente = $cita->mascota->cliente;
+        if ($cliente && $cliente->id_usuario) {
+            // Crear notificación en la base de datos
+            \App\Http\Controllers\NotificacionController::crear(
+                $cliente->id_usuario,
+                $tipo,
+                $mensaje
+            );
+            
+            // Enviar email si está configurado
+            if (config('mail.default') !== 'log') {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($cliente->usuario->correo)
+                        ->send(new \App\Mail\NotificacionClienteMail($cita, $tipo, $mensaje));
+                } catch (\Exception $e) {
+                    Log::error('Error enviando email: ' . $e->getMessage());
+                }
+            }
+        }
+    } catch (\Exception $e) {
+        Log::error('Error creando notificación: ' . $e->getMessage());
+    }
+}
 
 }

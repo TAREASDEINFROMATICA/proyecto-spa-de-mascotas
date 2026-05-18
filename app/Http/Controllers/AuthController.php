@@ -19,7 +19,6 @@ class AuthController extends Controller
 
         $usuario = Usuario::where('correo', $request->correo)->first();
 
-        // Si el usuario no existe
         if (!$usuario) {
             return response()->json([
                 'success' => false,
@@ -27,9 +26,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // =========================================================
-        // VERIFICAR SI LA CUENTA ESTÁ BLOQUEADA
-        // =========================================================
+        // Verificar bloqueo
         if ($usuario->estado === 'bloqueado' || ($usuario->blocked_until && Carbon::now()->lt($usuario->blocked_until))) {
             $blockedUntil = $usuario->blocked_until;
             $minutosRestantes = Carbon::now()->diffInMinutes($blockedUntil);
@@ -45,16 +42,11 @@ class AuthController extends Controller
             ], 423);
         }
 
-        // =========================================================
-        // VERIFICAR CONTRASEÑA
-        // =========================================================
+        // Verificar contraseña
         if (!Hash::check($request->contrasena, $usuario->contrasena_hash)) {
-            // Incrementar intentos fallidos
             $usuario->login_attempts = $usuario->login_attempts + 1;
-            // Log de intento fallido
             AuditLogService::registrar(null, 'Intento de inicio de sesión fallido - Email: ' . $request->correo, $request);
             
-            // Si llegó a 5 intentos, bloquear
             if ($usuario->login_attempts >= 5) {
                 $usuario->estado = 'bloqueado';
                 $usuario->blocked_until = Carbon::now()->addMinutes(15);
@@ -79,9 +71,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // =========================================================
-        // VERIFICAR SI EL USUARIO ESTÁ ACTIVO (NUEVO)
-        // =========================================================
+        // Verificar estado activo
         if ($usuario->estado !== 'activo') {
             return response()->json([
                 'success' => false,
@@ -89,9 +79,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // =========================================================
-        // LOGIN EXITOSO - RESETEAR INTENTOS
-        // =========================================================
+        // Login exitoso
         $usuario->login_attempts = 0;
         $usuario->blocked_until = null;
         $usuario->estado = 'activo';
@@ -99,35 +87,34 @@ class AuthController extends Controller
 
         $usuario->load('rol');
         
-        // =========================================================
-        // VERIFICAR 2FA PARA ADMINISTRADOR
-        // =========================================================
+        // Verificar 2FA para administrador
         if ($usuario->esAdmin() && $usuario->two_factor_secret) {
-            // Guardar usuario temporalmente en sesión
             session(['2fa_user_id' => $usuario->id_usuario]);
             
             return response()->json([
                 'success' => false,
                 'requires_2fa' => true,
+                'user_id' => $usuario->id_usuario,
                 'message' => 'Ingresa tu código de autenticación de dos factores'
             ], 401);
         }
         
         $token = $usuario->createToken('auth_token')->plainTextToken;
 
-        // Determinar redirección según rol
-        $redirectUrl = '/dashboard';
+        // =========================================================
+        // REDIRECCIONES CON TOKEN EN LA URL
+        // =========================================================
+        $redirectUrl = '';
         if ($usuario->rol->nombre === 'Administrador') {
-            $redirectUrl = '/admin/dashboard';
+            $redirectUrl = '/admin/dashboard?token=' . $token;
         } elseif ($usuario->rol->nombre === 'Recepcion') {
-            $redirectUrl = '/recepcion/dashboard';
+            $redirectUrl = '/recepcion/dashboard?token=' . $token;
         } elseif ($usuario->rol->nombre === 'Groomer') {
-            $redirectUrl = '/groomer/dashboard';
+            $redirectUrl = '/groomer/dashboard?token=' . $token;
         } else {
-            $redirectUrl = '/cliente/dashboard';
+            $redirectUrl = '/cliente/dashboard?token=' . $token;
         }
 
-        // Log de login exitoso
         AuditLogService::registrar($usuario->id_usuario, 'Inicio de sesión exitoso', $request);
         
         return response()->json([
@@ -144,7 +131,6 @@ class AuthController extends Controller
         ]);
     }
 
-    // Verificar 2FA después del login
     public function verificar2FALogin(Request $request)
     {
         $request->validate([
@@ -166,19 +152,20 @@ class AuthController extends Controller
         $google2fa = new \PragmaRX\Google2FA\Google2FA();
         
         if ($google2fa->verifyKey($usuario->two_factor_secret, $request->codigo)) {
-            // Limpiar sesión
             session()->forget('2fa_user_id');
             
-            // Generar token
             $token = $usuario->createToken('auth_token')->plainTextToken;
             
             $usuario->load('rol');
+            
+            // Redirección con token
+            $redirectUrl = '/admin/dashboard?token=' . $token;
             
             return response()->json([
                 'success' => true,
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-                'redirect' => '/admin/dashboard',
+                'redirect' => $redirectUrl,
                 'user' => [
                     'id' => $usuario->id_usuario,
                     'nombre_completo' => $usuario->nombres . ' ' . $usuario->apellidos,
@@ -222,13 +209,9 @@ class AuthController extends Controller
             return response()->json(['blocked' => false]);
         }
         
-        // Verificar si tiene fecha de bloqueo y si aún es válida
         if ($usuario->blocked_until && Carbon::now()->lt($usuario->blocked_until)) {
             $minutosRestantes = Carbon::now()->diffInMinutes($usuario->blocked_until);
             $segundosRestantes = Carbon::now()->diffInSeconds($usuario->blocked_until);
-            
-            $minutosRestantes = max(0, $minutosRestantes);
-            $segundosRestantes = max(0, $segundosRestantes);
             
             return response()->json([
                 'blocked' => true,
@@ -240,7 +223,6 @@ class AuthController extends Controller
             ]);
         }
         
-        // Si la fecha de bloqueo ya pasó, desbloquear automáticamente
         if ($usuario->blocked_until && Carbon::now()->gte($usuario->blocked_until)) {
             $usuario->estado = 'activo';
             $usuario->login_attempts = 0;
@@ -250,33 +232,34 @@ class AuthController extends Controller
         
         return response()->json(['blocked' => false]);
     }
-   public function cambiarContrasena(Request $request)
-{
-    $request->validate([
-        'contrasena_actual' => 'required|string',
-        'contrasena_nueva' => 'required|string|min:8|confirmed',
-    ], [
-        'contrasena_nueva.min' => 'La nueva contraseña debe tener al menos 8 caracteres.',
-        'contrasena_nueva.confirmed' => 'La confirmación de la nueva contraseña no coincide.',
-    ]);
     
-    $user = $request->user();
-    
-    if (!Hash::check($request->contrasena_actual, $user->contrasena_hash)) {
+    public function cambiarContrasena(Request $request)
+    {
+        $request->validate([
+            'contrasena_actual' => 'required|string',
+            'contrasena_nueva' => 'required|string|min:8|confirmed',
+        ], [
+            'contrasena_nueva.min' => 'La nueva contraseña debe tener al menos 8 caracteres.',
+            'contrasena_nueva.confirmed' => 'La confirmación de la nueva contraseña no coincide.',
+        ]);
+        
+        $user = $request->user();
+        
+        if (!Hash::check($request->contrasena_actual, $user->contrasena_hash)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La contraseña actual es incorrecta.'
+            ], 400);
+        }
+        
+        $user->contrasena_hash = Hash::make($request->contrasena_nueva);
+        $user->save();
+        
+        \App\Services\AuditLogService::registrar($user->id_usuario, 'Cambió su contraseña', $request);
+        
         return response()->json([
-            'success' => false,
-            'message' => 'La contraseña actual es incorrecta.'
-        ], 400);
+            'success' => true,
+            'message' => 'Contraseña actualizada correctamente. Vuelve a iniciar sesión.'
+        ]);
     }
-    
-    $user->contrasena_hash = Hash::make($request->contrasena_nueva);
-    $user->save();
-    
-    \App\Services\AuditLogService::registrar($user->id_usuario, 'Cambió su contraseña', $request);
-    
-    return response()->json([
-        'success' => true,
-        'message' => 'Contraseña actualizada correctamente. Vuelve a iniciar sesión.'
-    ]);
-}
 }

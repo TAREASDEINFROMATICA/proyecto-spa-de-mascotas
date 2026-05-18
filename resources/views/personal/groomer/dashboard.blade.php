@@ -2,132 +2,124 @@
 <html>
 <head>
     <title>Groomer - Pet Spa</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: Arial; margin: 50px; background: #e8f5e9; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 10px; }
-        h1 { color: #4CAF50; }
-        h2 { color: #2196F3; margin-top: 20px; }
-        button { background: red; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        .info { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        ul { list-style: none; padding: 0; }
-        li { margin: 15px 0; }
-        a { text-decoration: none; background: #2196F3; color: white; padding: 10px 15px; border-radius: 5px; display: inline-block; width: 220px; text-align: center; }
-        a:hover { background: #0b7dda; }
-        .btn-cambiar { background: #FF9800; margin-top: 15px; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 28px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .header p { opacity: 0.9; margin-top: 8px; font-size: 14px; }
+        .content { padding: 30px; }
         
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background: white;
-            width: 450px;
-            margin: 100px auto;
-            padding: 25px;
-            border-radius: 10px;
-            position: relative;
-        }
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 15px;
-            font-size: 28px;
-            cursor: pointer;
-            color: #aaa;
-        }
-        .close:hover { color: black; }
-        .password-container {
-            position: relative;
-            margin: 8px 0;
-        }
-        .password-container input {
-            width: 100%;
-            padding: 8px;
-            padding-right: 35px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .strength-meter {
-            height: 5px;
-            background: #ddd;
-            border-radius: 3px;
-            margin: 8px 0;
-        }
-        .strength-meter-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 3px;
-            transition: all 0.3s;
-        }
-        .weak { background: #e74c3c; }
-        .medium { background: #f39c12; }
-        .strong { background: #27ae60; }
-        .requirement {
-            font-size: 12px;
-            margin: 3px 0;
-        }
-        .requirement.valid { color: #27ae60; }
-        .requirement.invalid { color: #e74c3c; }
-        .mensaje { margin-top: 10px; padding: 10px; border-radius: 5px; font-size: 14px; }
-        .mensaje.exito { background: #d4edda; color: #155724; }
-        .mensaje.error { background: #f8d7da; color: #721c24; }
-        hr { margin: 20px 0; }
-        .btn-reporte { background: #9C27B0; width: 220px; }
-        .btn-reporte:hover { background: #7B1FA2; }
-        .btn-exportar { background: #f44336; width: 220px; }
-        .btn-exportar:hover { background: #d32f2f; }
-        .btn-calificacion { background: #ff9800; width: 220px; }
-        .btn-calificacion:hover { background: #f57c00; }
+        .info-card { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 20px; border-radius: 16px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .info-card i { font-size: 48px; color: #4CAF50; }
+        .info-text { flex: 1; }
+        .info-text strong { font-size: 18px; color: #2E7D32; }
+        .info-text p { color: #555; margin-top: 5px; }
+        
+        .notif-badge { background: #f44336; color: white; border-radius: 50%; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+        
+        h2 { font-size: 18px; color: #333; margin: 25px 0 15px 0; display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 2px solid #e0e0e0; }
+        h2 i { color: #4CAF50; font-size: 20px; }
+        
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 10px; }
+        .menu-item { background: #f8f9fa; border-radius: 12px; transition: all 0.3s ease; overflow: hidden; }
+        .menu-item:hover { background: #e8f5e9; transform: translateX(5px); }
+        .menu-item a { display: flex; align-items: center; gap: 12px; padding: 14px 18px; text-decoration: none; color: #333; font-weight: 500; transition: all 0.3s; }
+        .menu-item a i { width: 28px; font-size: 18px; color: #4CAF50; }
+        .menu-item a:hover { color: #4CAF50; }
+        
+        .btn-logout { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 20px; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-logout:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(244,67,54,0.3); }
+        .btn-cambiar { background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 20px; width: 100%; }
+        .btn-cambiar:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,152,0,0.3); }
+        
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; border-radius: 20px; width: 450px; max-width: 90%; padding: 25px; animation: modalFadeIn 0.3s ease; }
+        @keyframes modalFadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-content h3 { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .modal-content input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px; margin: 10px 0; font-family: 'Inter', sans-serif; }
+        .modal-content input:focus { outline: none; border-color: #4CAF50; }
+        .password-container { position: relative; }
+        .toggle-password { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999; }
+        .strength-meter { height: 6px; background: #e0e0e0; border-radius: 3px; margin: 10px 0; overflow: hidden; }
+        .strength-meter-fill { height: 100%; width: 0%; transition: width 0.3s; }
+        .weak { background: #f44336; }
+        .medium { background: #ff9800; }
+        .strong { background: #4CAF50; }
+        .requirement { font-size: 11px; margin: 5px 0; display: inline-block; width: 48%; }
+        .requirement.valid { color: #4CAF50; }
+        .requirement.invalid { color: #f44336; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-confirm { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        .btn-cancel-modal { background: #607d8b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        .close { float: right; font-size: 24px; cursor: pointer; color: #999; }
+        .close:hover { color: #333; }
+        .mensaje-exito { background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; }
+        .mensaje-error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; }
+        
+        @media (max-width: 640px) { .menu-grid { grid-template-columns: 1fr; } .info-card { flex-direction: column; text-align: center; } .requirement { width: 100%; } }
     </style>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     @php $token = request()->query('token'); @endphp
 
     <div class="container">
-        <h1>✂️ Panel de Groomer</h1>
-        <div class="info" id="userInfo">Cargando...</div>
-        <hr>
+        <div class="header">
+            <h1><i class="fas fa-cut"></i> Panel de Groomer</h1>
+            <p>Gestión de citas, servicios y más</p>
+        </div>
         
-        <h2>📋 Menú Principal</h2>
-        <ul>
-            <li><a href="#" id="enlaceMisCitas">📅 Mis Citas</a></li>
-            <li><a href="#" id="enlaceMisMascotas">🐕 Mascotas Asignadas</a></li>
-            <li><a href="#" id="enlaceChecklist">✅ Checklist de Servicios</a></li>
-            <li><a href="#" id="enlaceGaleria">📸 Galería de Fotos</a></li>
-            <li><a href="#" id="enlaceInsumos">📦 Mis Insumos</a></li>
-        </ul>
-        
-        <h2>📊 Reportes y Estadísticas</h2>
-        <ul>
-            <li><a href="#" id="enlaceCalificaciones" class="btn-calificacion">⭐ Mis Calificaciones</a></li>
-            <li><a href="#" id="enlaceEstadisticas" class="btn-reporte">📈 Mis Estadísticas</a></li>
-            <a href="#" id="enlaceExportarCSV" class="btn-exportar">📄 Exportar Servicios (CSV)</a>
-        </ul>
-        
-        <button class="btn-cambiar" onclick="abrirModal()">🔒 Cambiar Contraseña</button>
-        <button onclick="logout()" style="margin-top: 20px;">🚪 Cerrar Sesión</button>
+        <div class="content">
+            <div class="info-card">
+                <i class="fas fa-user-circle"></i>
+                <div class="info-text">
+                    <strong id="userName">Cargando...</strong>
+                    <p id="userEmail">Cargando datos del usuario...</p>
+                    <p id="userRol" style="margin-top: 5px;"></p>
+                </div>
+                <div id="notificacionesBtn" style="position: relative;">
+                    <a href="#" id="enlaceNotificaciones" style="background: #4CAF50; color: white; padding: 10px 15px; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-bell"></i> Notificaciones
+                        <span id="notifCount" class="notif-badge" style="display: none;">0</span>
+                    </a>
+                </div>
+            </div>
+            
+            <h2><i class="fas fa-calendar-alt"></i> Menú Principal</h2>
+            <div class="menu-grid">
+                <div class="menu-item"><a href="#" id="enlaceMisCitas"><i class="fas fa-calendar-check"></i> Mis Citas</a></div>
+                <div class="menu-item"><a href="#" id="enlaceMisMascotas"><i class="fas fa-dog"></i> Mascotas Asignadas</a></div>
+                <div class="menu-item"><a href="#" id="enlaceChecklist"><i class="fas fa-check-square"></i> Checklist de Servicios</a></div>
+                <div class="menu-item"><a href="#" id="enlaceGaleria"><i class="fas fa-images"></i> Galería de Fotos</a></div>
+                <div class="menu-item"><a href="#" id="enlaceInsumos"><i class="fas fa-boxes"></i> Mis Insumos</a></div>
+            </div>
+            
+            <h2><i class="fas fa-chart-line"></i> Reportes y Estadísticas</h2>
+            <div class="menu-grid">
+                <div class="menu-item"><a href="#" id="enlaceCalificaciones" style="background: #ff9800; border-radius: 12px;"><i class="fas fa-star"></i> Mis Calificaciones</a></div>
+                <div class="menu-item"><a href="#" id="enlaceEstadisticas" style="background: #9C27B0; border-radius: 12px;"><i class="fas fa-chart-line"></i> Mis Estadísticas</a></div>
+                <div class="menu-item"><a href="#" id="enlaceExportarCSV" style="background: #f44336; border-radius: 12px;"><i class="fas fa-file-csv"></i> Exportar Servicios</a></div>
+            </div>
+            
+            <button class="btn-cambiar" onclick="abrirModal()">
+                <i class="fas fa-key"></i> Cambiar Contraseña
+            </button>
+            <button onclick="logout()" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </div>
     </div>
 
     <!-- Modal para cambiar contraseña -->
     <div id="modalPassword" class="modal">
         <div class="modal-content">
             <span class="close" onclick="cerrarModal()">&times;</span>
-            <h3>🔒 Cambiar Contraseña</h3>
+            <h3><i class="fas fa-lock"></i> Cambiar Contraseña</h3>
             <form id="cambiarPasswordForm">
                 <div class="password-container">
                     <input type="password" id="contrasena_actual" placeholder="Contraseña actual" required>
@@ -138,7 +130,7 @@
                     <span class="toggle-password" onclick="togglePassword('contrasena_nueva')">👁️</span>
                 </div>
                 <div class="strength-meter"><div class="strength-meter-fill" id="strengthFill"></div></div>
-                <div id="strengthText"></div>
+                <div id="strengthText" style="font-size: 12px; margin-bottom: 10px;"></div>
                 <div id="requisitos">
                     <div class="requirement invalid" id="req-length">❌ Mínimo 8 caracteres</div>
                     <div class="requirement invalid" id="req-upper">❌ Al menos una mayúscula</div>
@@ -150,7 +142,10 @@
                     <input type="password" id="contrasena_nueva_confirmation" placeholder="Confirmar contraseña" required>
                     <span class="toggle-password" onclick="togglePassword('contrasena_nueva_confirmation')">👁️</span>
                 </div>
-                <button type="submit">✅ Cambiar Contraseña</button>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-confirm">✅ Cambiar</button>
+                    <button type="button" onclick="cerrarModal()" class="btn-cancel-modal">Cancelar</button>
+                </div>
             </form>
             <div id="passwordResultado"></div>
         </div>
@@ -165,9 +160,6 @@
             const enlace = document.getElementById(id);
             if (enlace) {
                 enlace.href = url + '?token=' + token;
-                console.log(`Enlace creado: ${id} -> ${enlace.href}`);
-            } else {
-                console.warn(`Elemento no encontrado: ${id}`);
             }
         }
 
@@ -181,12 +173,41 @@
         crearEnlace('enlaceInsumos', '/groomer/insumos');
         
         // =========================================================
-        // REPORTES Y ESTADÍSTICAS (NUEVOS)
+        // REPORTES Y ESTADÍSTICAS
         // =========================================================
         crearEnlace('enlaceCalificaciones', '/groomer/mis-calificaciones');
         crearEnlace('enlaceEstadisticas', '/groomer/mis-estadisticas');
         crearEnlace('enlaceExportarCSV', '/groomer/exportar-csv');
+        
+        // =========================================================
+        // NOTIFICACIONES
+        // =========================================================
+        crearEnlace('enlaceNotificaciones', '/mis-notificaciones');
+        
+        // =========================================================
+        // NOTIFICACIONES - CONTADOR
+        // =========================================================
+        function actualizarNotificaciones() {
+            fetch('/notificaciones/count?token=' + token)
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.getElementById('notifCount');
+                    if (badge && data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'inline-block';
+                    } else if (badge) {
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(err => console.log('Error:', err));
+        }
+        
+        setInterval(actualizarNotificaciones, 30000);
+        actualizarNotificaciones();
 
+        // =========================================================
+        // MODAL CAMBIAR CONTRASEÑA
+        // =========================================================
         function togglePassword(id) {
             const input = document.getElementById(id);
             input.type = input.type === 'password' ? 'text' : 'password';
@@ -232,46 +253,57 @@
             checkPasswordStrength(this.value);
         });
 
-        function abrirModal() { document.getElementById('modalPassword').style.display = 'block'; }
+        function abrirModal() { document.getElementById('modalPassword').style.display = 'flex'; }
         function cerrarModal() { 
             document.getElementById('modalPassword').style.display = 'none';
-            $('#cambiarPasswordForm')[0].reset();
-            $('#passwordResultado').html('');
-            $('#strengthFill').css('width', '0%');
-            $('#strengthText').html('');
-            $('.requirement').each(function() {
-                $(this).removeClass('valid').addClass('invalid');
-                $(this).html($(this).html().replace('✅', '❌'));
+            document.getElementById('cambiarPasswordForm').reset();
+            document.getElementById('passwordResultado').innerHTML = '';
+            document.getElementById('strengthFill').style.width = '0%';
+            document.getElementById('strengthText').innerHTML = '';
+            document.querySelectorAll('.requirement').forEach(r => {
+                r.classList.remove('valid');
+                r.classList.add('invalid');
+                r.innerHTML = r.innerHTML.replace('✅', '❌');
             });
         }
 
+        // =========================================================
+        // CARGAR DATOS DEL USUARIO
+        // =========================================================
         fetch('/api/me', {
             headers: { 'Authorization': 'Bearer ' + token }
-        }).then(res => res.json()).then(data => {
+        })
+        .then(res => res.json())
+        .then(data => {
             if (data.user) {
-                document.getElementById('userInfo').innerHTML = `
-                    <strong>Bienvenido/a:</strong> ${data.user.nombres} ${data.user.apellidos}<br>
-                    <strong>Email:</strong> ${data.user.correo}<br>
-                    <strong>Rol:</strong> ${data.user.rol.nombre}
-                `;
+                document.getElementById('userName').innerHTML = `👋 Bienvenido, ${data.user.nombres} ${data.user.apellidos}`;
+                document.getElementById('userEmail').innerHTML = `📧 ${data.user.correo}`;
+                document.getElementById('userRol').innerHTML = `<i class="fas fa-tag"></i> Rol: <strong>${data.user.rol.nombre}</strong>`;
             }
-        });
+        })
+        .catch(() => { window.location.href = '/'; });
 
+        // =========================================================
+        // LOGOUT
+        // =========================================================
         function logout() {
             fetch('/api/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } })
-                .then(() => { localStorage.removeItem('token'); window.location.href = '/'; });
+                .finally(() => { localStorage.removeItem('token'); window.location.href = '/'; });
         }
 
+        // =========================================================
+        // CAMBIAR CONTRASEÑA
+        // =========================================================
         $('#cambiarPasswordForm').on('submit', function(e) {
             e.preventDefault();
             const nueva = $('#contrasena_nueva').val();
             const conf = $('#contrasena_nueva_confirmation').val();
             if (!checkPasswordStrength(nueva)) {
-                $('#passwordResultado').html('<div class="mensaje error">❌ Contraseña no cumple requisitos</div>');
+                $('#passwordResultado').html('<div class="mensaje-error">❌ Contraseña no cumple requisitos</div>');
                 return;
             }
             if (nueva !== conf) {
-                $('#passwordResultado').html('<div class="mensaje error">❌ Las contraseñas no coinciden</div>');
+                $('#passwordResultado').html('<div class="mensaje-error">❌ Las contraseñas no coinciden</div>');
                 return;
             }
             $.ajax({
@@ -284,30 +316,42 @@
                     contrasena_nueva_confirmation: conf
                 }),
                 success: function(res) {
-                    $('#passwordResultado').html('<div class="mensaje exito">✅ ' + res.message + '</div>');
+                    $('#passwordResultado').html('<div class="mensaje-exito">✅ ' + res.message + '</div>');
                     setTimeout(cerrarModal, 2000);
                 },
                 error: function(xhr) {
-                    $('#passwordResultado').html('<div class="mensaje error">❌ ' + (xhr.responseJSON?.message || 'Error') + '</div>');
+                    $('#passwordResultado').html('<div class="mensaje-error">❌ ' + (xhr.responseJSON?.message || 'Error') + '</div>');
                 }
             });
         });
 
+        // =========================================================
+        // SESIÓN POR INACTIVIDAD
+        // =========================================================
         let tiempoInactividad;
-        const TIEMPO_LIMITE = 30 * 1000;
+        const TIEMPO_LIMITE = 30 * 60 * 1000; // 30 minutos
+        
         function cerrarSesionPorInactividad() {
             fetch('/api/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } })
                 .finally(() => { localStorage.removeItem('token'); window.location.href = '/'; });
         }
+        
         function reiniciarTiempo() {
             clearTimeout(tiempoInactividad);
             tiempoInactividad = setTimeout(cerrarSesionPorInactividad, TIEMPO_LIMITE);
         }
+        
         window.onload = reiniciarTiempo;
         document.onmousemove = reiniciarTiempo;
         document.onkeydown = reiniciarTiempo;
         document.onclick = reiniciarTiempo;
         document.onscroll = reiniciarTiempo;
+        
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalPassword');
+            if (event.target == modal) cerrarModal();
+        }
     </script>
 </body>
 </html>

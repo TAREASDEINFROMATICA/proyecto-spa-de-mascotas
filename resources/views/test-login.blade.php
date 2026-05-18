@@ -22,6 +22,34 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         h2 { text-align: center; color: #333; margin-bottom: 25px; }
+        
+        /* Campo de contraseña con ojo */
+        .password-container {
+            position: relative;
+            margin: 10px 0;
+        }
+        .password-container input {
+            width: 100%;
+            padding: 12px;
+            padding-right: 40px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 18px;
+            color: #999;
+            user-select: none;
+        }
+        .toggle-password:hover {
+            color: #667eea;
+        }
+        
         input {
             width: 100%;
             padding: 12px;
@@ -134,12 +162,16 @@
         <div id="loginPanel">
             <form id="loginForm">
                 <input type="email" id="correo" placeholder="Correo" value="admin@spamascota.com" required>
-                <input type="password" id="contrasena" placeholder="Contraseña" required>
+                
+                <div class="password-container">
+                    <input type="password" id="contrasena" placeholder="Contraseña" required>
+                    <span class="toggle-password" onclick="togglePassword()">👁️</span>
+                </div>
                 
                 <div class="captcha-container">
                     <div id="captchaCode" style="margin-bottom: 10px;">Cargando captcha...</div>
                     <div class="flex-center">
-                        <button type="button" onclick="refreshCaptcha()" class="captcha-refresh"> Actualizar código</button>
+                        <button type="button" onclick="refreshCaptcha()" class="captcha-refresh">🔄 Actualizar código</button>
                     </div>
                     <input type="text" id="captcha" placeholder="Escribe el código de la imagen" style="margin-top: 10px;" required>
                 </div>
@@ -151,7 +183,7 @@
         <hr style="margin: 20px 0;">
         
         <a href="/auth/google" style="display: block; text-align: center; background: #4285F4; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-             Continuar con Google
+            🚀 Continuar con Google
         </a>
         
         <div style="text-align: center; margin-top: 15px;">
@@ -159,11 +191,9 @@
             <a href="/registro" style="color: #667eea; text-decoration: none;"> Regístrate aquí</a>
         </div>
         
-        <!-- ========================================================= -->
-        <!-- REENVIAR VERIFICACIÓN (NUEVO) -->
-        <!-- ========================================================= -->
+        <!-- REENVIAR VERIFICACIÓN -->
         <div class="reenviar-link">
-            <a href="#" id="reenviarLink"> ¿No recibiste el correo de verificación? Reenviar enlace</a>
+            <a href="#" id="reenviarLink"> 📧 ¿No recibiste el correo de verificación? Reenviar enlace</a>
         </div>
         
         <div id="reenviarForm" class="reenviar-form">
@@ -176,7 +206,7 @@
         <!-- Panel de 2FA -->
         <div id="twofaPanel" style="display: none;">
             <div class="info" style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                <strong> Autenticación de Dos Factores</strong><br>
+                <strong>🔐 Autenticación de Dos Factores</strong><br>
                 Ingresa el código de 6 dígitos de Google Authenticator
             </div>
             <input type="text" id="codigo2fa" class="codigo-input" placeholder="000000" maxlength="6" style="font-size: 24px; text-align: center; letter-spacing: 5px;">
@@ -191,6 +221,22 @@
         let currentCaptchaCode = '';
         let tiempoRestanteIntervalo = null;
         let pendingLoginData = null;
+        
+        // =========================================================
+        // MOSTRAR/OCULTAR CONTRASEÑA
+        // =========================================================
+        function togglePassword() {
+            const passwordInput = document.getElementById('contrasena');
+            const toggleIcon = document.querySelector('.toggle-password');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.innerHTML = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.innerHTML = '👁️';
+            }
+        }
         
         // Generar CAPTCHA
         let refreshing = false;
@@ -211,11 +257,11 @@
                         $('#captchaCode').html(response.html);
                         $('#captcha').val('');
                     } else {
-                        $('#captchaCode').html(' Error al generar captcha');
+                        $('#captchaCode').html('❌ Error al generar captcha');
                     }
                 },
                 error: function() {
-                    $('#captchaCode').html(' Error al generar captcha');
+                    $('#captchaCode').html('❌ Error al generar captcha');
                 },
                 complete: function() {
                     refreshing = false;
@@ -245,11 +291,11 @@
             const codigo = document.getElementById('codigo2fa').value;
             
             if (!codigo || codigo.length !== 6) {
-                document.getElementById('resultado').innerHTML = '<div class="error">Ingresa el código de 6 dígitos</div>';
+                document.getElementById('resultado').innerHTML = '<div class="error">❌ Ingresa el código de 6 dígitos</div>';
                 return;
             }
             
-            document.getElementById('resultado').innerHTML = '<div class="loading"> Verificando código 2FA...</div>';
+            document.getElementById('resultado').innerHTML = '<div class="loading">🔍 Verificando código 2FA...</div>';
             
             $.ajax({
                 url: '/api/2fa/verificar-login',
@@ -265,16 +311,14 @@
                 },
                 error: function(xhr) {
                     let response = xhr.responseJSON;
-                    document.getElementById('resultado').innerHTML = `<div class="error"> ${response.message || 'Código incorrecto'}</div>`;
+                    document.getElementById('resultado').innerHTML = `<div class="error">❌ ${response.message || 'Código incorrecto'}</div>`;
                     document.getElementById('codigo2fa').value = '';
                     document.getElementById('codigo2fa').focus();
                 }
             });
         }
         
-        // =========================================================
         // REENVIAR VERIFICACIÓN
-        // =========================================================
         document.getElementById('reenviarLink').onclick = function(e) {
             e.preventDefault();
             document.getElementById('reenviarForm').style.display = 'block';
@@ -291,11 +335,11 @@
             const resultadoDiv = document.getElementById('resultadoReenvio');
             
             if (!email) {
-                resultadoDiv.innerHTML = '<div style="color: red;"> Ingresa tu correo electrónico</div>';
+                resultadoDiv.innerHTML = '<div style="color: red;">❌ Ingresa tu correo electrónico</div>';
                 return;
             }
             
-            resultadoDiv.innerHTML = '<div style="color: #666;"> Enviando...</div>';
+            resultadoDiv.innerHTML = '<div style="color: #666;">📧 Enviando...</div>';
             
             fetch('/reenviar-verificacion', {
                 method: 'POST',
@@ -308,14 +352,14 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    resultadoDiv.innerHTML = '<div style="color: green;"> ' + data.message + '</div>';
+                    resultadoDiv.innerHTML = '<div style="color: green;">✅ ' + data.message + '</div>';
                     setTimeout(() => cerrarReenviar(), 3000);
                 } else {
-                    resultadoDiv.innerHTML = '<div style="color: red;"> ' + data.message + '</div>';
+                    resultadoDiv.innerHTML = '<div style="color: red;">❌ ' + data.message + '</div>';
                 }
             })
             .catch(error => {
-                resultadoDiv.innerHTML = '<div style="color: red;"> Error al reenviar</div>';
+                resultadoDiv.innerHTML = '<div style="color: red;">❌ Error al reenviar</div>';
             });
         }
         
@@ -325,7 +369,6 @@
             }
             
             refreshCaptcha();
-            console.log('CAPTCHA manual activado');
             
             $('#loginForm').on('submit', function(e) {
                 e.preventDefault();
@@ -335,17 +378,17 @@
                 const captcha = $('#captcha').val().trim();
                 
                 if (!captcha) {
-                    $('#resultado').html('<div class="error"> Por favor ingresa el código de seguridad</div>');
+                    $('#resultado').html('<div class="error">❌ Por favor ingresa el código de seguridad</div>');
                     return;
                 }
                 
                 if (captcha.toUpperCase() !== currentCaptchaCode) {
-                    $('#resultado').html('<div class="error"> Código de seguridad incorrecto</div>');
+                    $('#resultado').html('<div class="error">❌ Código de seguridad incorrecto</div>');
                     refreshCaptcha();
                     return;
                 }
                 
-                $('#resultado').html('<div class="loading"> Verificando credenciales...</div>');
+                $('#resultado').html('<div class="loading">🔍 Verificando credenciales...</div>');
                 
                 $.ajax({
                     url: '/api/login',
@@ -377,7 +420,7 @@
                             
                             $('#resultado').html(`
                                 <div class="blocked">
-                                    <strong> ${response.message}</strong><br>
+                                    <strong>🔒 ${response.message}</strong><br>
                                     ${response.details}<br>
                                     <div id="contador">🕐 ${minutos}:00</div>
                                 </div>
@@ -396,10 +439,10 @@
                             refreshCaptcha();
                             
                         } else if (response && response.message) {
-                            $('#resultado').html(`<div class="error"> ${response.message}</div>`);
+                            $('#resultado').html(`<div class="error">❌ ${response.message}</div>`);
                             refreshCaptcha();
                         } else {
-                            $('#resultado').html('<div class="error"> Error desconocido</div>');
+                            $('#resultado').html('<div class="error">❌ Error desconocido</div>');
                             refreshCaptcha();
                         }
                     }

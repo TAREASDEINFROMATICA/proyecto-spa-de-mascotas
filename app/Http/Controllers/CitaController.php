@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Http\Controllers\NotificacionController;
 
 class CitaController extends Controller
 {
@@ -330,6 +331,20 @@ public function confirmarCita(Request $request, $id)
         'Confirmó cita ID: ' . $id,
         $request
     );
+    
+    // =========================================================
+    // NOTIFICACIONES - MOVER ANTES DEL RETURN
+    // =========================================================
+    $cliente = $cita->mascota->cliente;
+    
+    // Crear notificación en sistema
+    NotificacionController::crear(
+        $cliente->id_usuario,
+        'cita_confirmada',
+        "Tu cita para {$cita->mascota->nombre} el {$cita->fecha} a las {$cita->hora_inicio} ha sido confirmada."
+    );
+    
+    
     
     return response()->json(['success' => true, 'message' => 'Cita confirmada correctamente']);
 }
