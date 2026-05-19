@@ -332,7 +332,6 @@ public function confirmarCita(Request $request, $id)
         $request
     );
     
-    // =========================================================
     // NOTIFICACIONES - MOVER ANTES DEL RETURN
     // =========================================================
     $cliente = $cita->mascota->cliente;

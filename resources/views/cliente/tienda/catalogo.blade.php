@@ -158,10 +158,7 @@
         const token = '{{ $token }}';
         let productoActual = null;
         
-        // =========================================================
-        // CARRITO CON localStorage
-        // =========================================================
-        
+      
         function getCarrito() {
             const carrito = localStorage.getItem('carrito');
             return carrito ? JSON.parse(carrito) : [];
