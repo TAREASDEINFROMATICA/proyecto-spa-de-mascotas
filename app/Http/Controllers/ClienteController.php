@@ -10,7 +10,7 @@ use App\Models\Mascota;
 
 class ClienteController extends Controller
 {
-   public function index(Request $request)
+public function index(Request $request)
 {
     $user = $this->getUserFromToken($request);
     if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
@@ -19,7 +19,10 @@ class ClienteController extends Controller
     
     $rol = $user->esAdmin() ? 'admin' : 'recepcion';
     
-    $clientes = Usuario::where('id_rol', 4)->with('cliente')->get();
+    // Mejor: obtener el ID del rol Cliente dinámicamente
+    $rolCliente = \App\Models\Rol::where('nombre', 'Cliente')->first();
+    $clientes = Usuario::where('id_rol', $rolCliente->id_rol)->with('cliente')->get();
+    
     $token = $request->query('token');
     
     return view('personal.recepcion.clientes', compact('clientes', 'token', 'rol'));

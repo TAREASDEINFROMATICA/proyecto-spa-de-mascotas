@@ -22,7 +22,7 @@ use App\Http\Controllers\CitaController;
 use App\Http\Controllers\GroomerController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\AdminController;
-
+use Illuminate\Support\Facades\Request as RequestFacade; 
 // Redirigir cuando no hay autenticación
 Route::get('/login', function () {
     return redirect('/');
