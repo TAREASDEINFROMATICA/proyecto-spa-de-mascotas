@@ -142,4 +142,24 @@ public static function enviarRecordatorioEmail(Cita $cita, $tipo = 'recordatorio
         return false;
     }
 }
+// =========================================================
+// ENVIAR ALERTA DE STOCK BAJO
+// =========================================================
+public static function alertaStockBajo($tipo, $nombre, $stock, $stockMinimo, $unidad)
+{
+    $mensaje = "⚠️ ALERTA: {$tipo} '{$nombre}' tiene stock bajo! Stock actual: {$stock} {$unidad} (Mínimo: {$stockMinimo} {$unidad})";
+    
+    // Buscar usuarios con rol Administrador y Recepción
+    $usuarios = \App\Models\Usuario::whereHas('rol', function($q) {
+        $q->whereIn('nombre', ['Administrador', 'Recepción']);
+    })->get();
+    
+    foreach ($usuarios as $usuario) {
+        self::crear(
+            $usuario->id_usuario,
+            'stock_bajo',
+            $mensaje
+        );
+    }
+}
 }

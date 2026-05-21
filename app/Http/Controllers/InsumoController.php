@@ -166,6 +166,16 @@ public function guardarImagen(Request $request, $id)
         }
         
         $insumo->save();
+        // En el método update, después de guardar
+if ($insumo->stock <= $insumo->stock_minimo) {
+    \App\Http\Controllers\NotificacionController::alertaStockBajo(
+        'Insumo',
+        $insumo->nombre,
+        $insumo->stock,
+        $insumo->stock_minimo,
+        $insumo->unidad_medida
+    );
+}
         
         return redirect()->route('admin.insumos.index', ['token' => $request->query('token')])
             ->with('success', '✅ Insumo actualizado correctamente');
@@ -201,7 +211,16 @@ public function guardarImagen(Request $request, $id)
         }
         
         $insumo->save();
-        
+        // En el método update, después de guardar
+if ($insumo->stock <= $insumo->stock_minimo) {
+    \App\Http\Controllers\NotificacionController::alertaStockBajo(
+        'Insumo',
+        $insumo->nombre,
+        $insumo->stock,
+        $insumo->stock_minimo,
+        $insumo->unidad_medida
+    );
+}
         return response()->json([
             'success' => true, 
             'message' => $mensaje, 

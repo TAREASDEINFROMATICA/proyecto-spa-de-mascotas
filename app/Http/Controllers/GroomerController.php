@@ -477,6 +477,9 @@ public function registrarConsumoInsumo(Request $request, $citaId)
             $insumo->stock -= $item['cantidad'];
             $insumo->save();
             
+            // ✅ VERIFICAR STOCK BAJO (NUEVO)
+            $this->verificarStockBajo($insumo);
+            
             $resultados[] = [
                 'id_insumo' => $item['id_insumo'],
                 'success' => true,
@@ -811,5 +814,19 @@ private function enviarNotificacionCliente($cita, $tipo, $mensaje)
         Log::error('Error creando notificación: ' . $e->getMessage());
     }
 }
-
+// =========================================================
+// VERIFICAR Y ALERTAR STOCK BAJO
+// =========================================================
+private function verificarStockBajo($insumo)
+{
+    if ($insumo->stock <= $insumo->stock_minimo) {
+        \App\Http\Controllers\NotificacionController::alertaStockBajo(
+            'Insumo',
+            $insumo->nombre,
+            $insumo->stock,
+            $insumo->stock_minimo,
+            $insumo->unidad_medida
+        );
+    }
+}
 }

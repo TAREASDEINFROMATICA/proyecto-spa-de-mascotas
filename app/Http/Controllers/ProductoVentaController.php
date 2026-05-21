@@ -182,7 +182,16 @@ public function guardarImagen(Request $request, $id)
             'stock_minimo' => $request->stock_minimo,
             'unidad_medida' => $request->unidad_medida
         ]);
-        
+        // En el método update o ajustarStock, después de guardar
+if ($producto->stock <= $producto->stock_minimo) {
+    \App\Http\Controllers\NotificacionController::alertaStockBajo(
+        'Producto',
+        $producto->nombre,
+        $producto->stock,
+        $producto->stock_minimo,
+        $producto->unidad_medida
+    );
+}
         return redirect()->route('admin.productos.index', ['token' => $request->query('token')])
             ->with('success', '✅ Producto actualizado correctamente');
     }
@@ -217,7 +226,16 @@ public function guardarImagen(Request $request, $id)
         }
         
         $producto->save();
-        
+        // En el método update o ajustarStock, después de guardar
+if ($producto->stock <= $producto->stock_minimo) {
+    \App\Http\Controllers\NotificacionController::alertaStockBajo(
+        'Producto',
+        $producto->nombre,
+        $producto->stock,
+        $producto->stock_minimo,
+        $producto->unidad_medida
+    );
+}
         return response()->json(['success' => true, 'message' => $mensaje, 'stock' => $producto->stock]);
     }
 

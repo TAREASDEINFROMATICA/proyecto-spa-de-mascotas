@@ -94,7 +94,7 @@
             <div class="menu-grid">
                 <div class="menu-item"><a href="#" id="enlaceMisCitas"><i class="fas fa-calendar-check"></i> Mis Citas</a></div>
                 <div class="menu-item"><a href="#" id="enlaceMisMascotas"><i class="fas fa-dog"></i> Mascotas Asignadas</a></div>
-                <div class="menu-item"><a href="#" id="enlaceChecklist"><i class="fas fa-check-square"></i> Checklist de Servicios</a></div>
+                
                 <div class="menu-item"><a href="#" id="enlaceGaleria"><i class="fas fa-images"></i> Galería de Fotos</a></div>
                 <div class="menu-item"><a href="#" id="enlaceInsumos"><i class="fas fa-boxes"></i> Mis Insumos</a></div>
             </div>
