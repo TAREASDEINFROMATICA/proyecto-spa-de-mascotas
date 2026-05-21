@@ -30,7 +30,7 @@
         .producto-imagen i { font-size: 60px; color: #ccc; }
         .producto-info { padding: 20px; }
         .producto-nombre { font-size: 18px; font-weight: 700; color: #333; margin-bottom: 8px; }
-        .producto-descripcion { font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .producto-descripcion { font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
         .producto-precio { font-size: 22px; font-weight: 700; color: #4CAF50; margin: 10px 0; }
         .producto-stock { font-size: 12px; color: #666; margin-bottom: 15px; }
         .producto-stock.bajo { color: #f44336; }

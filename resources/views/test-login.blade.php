@@ -156,7 +156,7 @@
 <body>
     
     <div class="container">
-        <h2> LOGIN DE SPA DE MASCOTAS</h2>
+        <h2>🐾 LOGIN SPA DE MASCOTAS</h2>
         
         <!-- Formulario de login normal -->
         <div id="loginPanel">
@@ -363,11 +363,11 @@
             });
         }
         
+        // =========================================================
+        // DOCUMENT READY - SIN REDIRECCIÓN AUTOMÁTICA
+        // =========================================================
         $(document).ready(function() {
-            if (localStorage.getItem('token')) {
-                window.location.href = '/dashboard';
-            }
-            
+            // Solo cargar el captcha, NO redirigir automáticamente
             refreshCaptcha();
             
             $('#loginForm').on('submit', function(e) {
