@@ -246,7 +246,7 @@
                     <select name="id_empleado" id="id_empleado" required>
                         <option value="">Seleccionar groomer</option>
                         @foreach($groomers as $g)
-                            <option value="{{ $g->id_emploedado }}">✂️ {{ $g->usuario->nombres }} {{ $g->usuario->apellidos }}</option>
+                            <option value="{{ $g->id_empleado }}">✂️ {{ $g->usuario->nombres }} {{ $g->usuario->apellidos }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -310,6 +310,7 @@
                     token: '{{ $token }}'
                 },
                 success: function(data) {
+                    console.log('Horarios recibidos:', data);
                     if (data.length === 0) {
                         $('#horariosLista').html('<div class="no-horarios"><i class="fas fa-calendar-times"></i> No hay horarios disponibles para este día</div>');
                         $('#submitBtn').hide();
@@ -324,7 +325,8 @@
                         $('#submitBtn').show();
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.log('Error:', error);
                     $('#horariosLista').html('<div class="no-horarios"><i class="fas fa-exclamation-triangle"></i> Error al cargar horarios</div>');
                 }
             });
@@ -338,6 +340,14 @@
             $('.slot').css('color', '#334155');
             $(event.target).closest('.slot').addClass('slot-seleccionado');
         }
+        
+        // Debug: Verificar que los campos existen
+        console.log('Campos:', {
+            mascota: $('#id_mascota').length,
+            servicio: $('#id_servicio').length,
+            empleado: $('#id_empleado').length,
+            fecha: $('#fecha').length
+        });
     </script>
 </body>
 </html>

@@ -1324,3 +1324,71 @@ Route::get('/notificaciones/count', function () {
     $controller = new \App\Http\Controllers\NotificacionController();
     return $controller->contarNoLeidas(request());
 })->name('notificaciones.count');
+
+
+
+// =========================================================
+// ADMIN - DÍAS NO LABORABLES (FERIADOS, MANTENIMIENTO, ETC)
+// =========================================================
+Route::get('/admin/dias-no-laborables', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\DiaNoLaborableController();
+    return $controller->index(request());
+})->name('admin.dias-no-laborables.index');
+
+Route::get('/admin/dias-no-laborables/create', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\DiaNoLaborableController();
+    return $controller->create(request());
+})->name('admin.dias-no-laborables.create');
+
+Route::post('/admin/dias-no-laborables', function () {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\DiaNoLaborableController();
+    return $controller->store(request());
+})->name('admin.dias-no-laborables.store');
+
+Route::get('/admin/dias-no-laborables/{id}/edit', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\DiaNoLaborableController();
+    return $controller->edit(request(), $id);
+})->name('admin.dias-no-laborables.edit');
+
+Route::put('/admin/dias-no-laborables/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\DiaNoLaborableController();
+    return $controller->update(request(), $id);
+})->name('admin.dias-no-laborables.update');
+
+Route::delete('/admin/dias-no-laborables/{id}', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\DiaNoLaborableController();
+    return $controller->destroy(request(), $id);
+})->name('admin.dias-no-laborables.destroy');
+
+Route::post('/admin/dias-no-laborables/{id}/toggle', function ($id) {
+    $token = request()->query('token');
+    if ($token) {
+        request()->headers->set('Authorization', 'Bearer ' . $token);
+    }
+    $controller = new \App\Http\Controllers\DiaNoLaborableController();
+    return $controller->toggleEstado(request(), $id);
+})->name('admin.dias-no-laborables.toggle');

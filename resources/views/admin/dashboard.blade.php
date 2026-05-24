@@ -148,12 +148,14 @@
             <!-- MENÚ PRINCIPAL -->
             <!-- ========================================================= -->
             <h2><i class="fas fa-tachometer-alt"></i> Gestión Principal</h2>
-            <div class="menu-grid">
-                <div class="menu-item"><a href="#" id="enlaceEmpleados"><i class="fas fa-users"></i> Gestionar Empleados</a></div>
-                <div class="menu-item"><a href="#" id="enlaceServicios"><i class="fas fa-cut"></i> Gestionar Servicios</a></div>
-                <div class="menu-item"><a href="#" id="enlaceAgenda"><i class="fas fa-calendar-alt"></i> Agenda Maestra</a></div>
-                <div class="menu-item"><a href="#" id="enlaceCitas"><i class="fas fa-calendar-check"></i> Ver todas las citas</a></div>
-            </div>
+<div class="menu-grid">
+    <div class="menu-item"><a href="#" id="enlaceEmpleados"><i class="fas fa-users"></i> Gestionar Empleados</a></div>
+    <div class="menu-item"><a href="#" id="enlaceServicios"><i class="fas fa-cut"></i> Gestionar Servicios</a></div>
+    <div class="menu-item"><a href="#" id="enlaceAgenda"><i class="fas fa-calendar-alt"></i> Agenda Maestra</a></div>
+    <div class="menu-item"><a href="#" id="enlaceCitas"><i class="fas fa-calendar-check"></i> Ver todas las citas</a></div>
+    <!-- 🔽 NUEVO BOTÓN DE DÍAS NO LABORABLES 🔽 -->
+    <div class="menu-item"><a href="#" id="enlaceDiasNoLaborables"><i class="fas fa-calendar-times"></i> Días No Laborables</a></div>
+</div>
             
             <h2><i class="fas fa-chart-line"></i> Ventas y Finanzas</h2>
             <div class="menu-grid">
@@ -267,6 +269,7 @@
         crearEnlace('enlaceServicios', '/admin/servicios');
         crearEnlace('enlaceAgenda', '/admin/agenda');
         crearEnlace('enlaceCitas', '/admin/citas/todas');
+        crearEnlace('enlaceDiasNoLaborables', '/admin/dias-no-laborables'); 
         
         // =========================================================
         // VENTAS Y FINANZAS

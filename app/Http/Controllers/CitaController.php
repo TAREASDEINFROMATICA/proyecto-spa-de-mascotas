@@ -1,12 +1,14 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Mail\CitaMail;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Cita;
 use App\Models\Mascota;
 use App\Models\Servicio;
 use App\Models\Empleado;
+use App\Models\DiaNoLaborable;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -24,6 +26,25 @@ class CitaController extends Controller
         $tokenRecord = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
         if (!$tokenRecord) return null;
         return \App\Models\Usuario::find($tokenRecord->tokenable_id);
+    }
+
+    // Verificar si una fecha es no laborable
+    private function esFechaNoLaborable($fecha)
+    {
+        return DiaNoLaborable::esNoLaborable($fecha);
+    }
+
+    // Método para enviar emails
+    public function enviarEmailCita($cita, $tipo)
+    {
+        try {
+            $cliente = $cita->mascota->cliente;
+            $email = $cliente->usuario->correo;
+            Mail::to($email)->send(new CitaMail($cita, $tipo));
+            Log::info("Email enviado: $tipo - Cita ID: {$cita->id_cita}");
+        } catch (\Exception $e) {
+            Log::error("Error enviando email: " . $e->getMessage());
+        }
     }
 
     /**
@@ -59,6 +80,11 @@ class CitaController extends Controller
         if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
             Log::info('No autorizado');
             return redirect('/')->with('error', 'No autorizado');
+        }
+        
+        // ✅ VALIDAR DÍA NO LABORABLE
+        if ($this->esFechaNoLaborable($request->fecha)) {
+            return back()->with('error', '❌ El día seleccionado no está disponible para agendar citas (Feriado o Mantenimiento).');
         }
         
         $request->validate([
@@ -146,6 +172,11 @@ class CitaController extends Controller
         
         if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
             return redirect('/')->with('error', 'No autorizado');
+        }
+        
+        // ✅ VALIDAR DÍA NO LABORABLE
+        if ($this->esFechaNoLaborable($request->fecha)) {
+            return back()->with('error', '❌ El día seleccionado no está disponible para agendar citas (Feriado o Mantenimiento).');
         }
         
         $cita = Cita::findOrFail($id);
@@ -260,95 +291,88 @@ class CitaController extends Controller
         return view('cliente.solicitar-cita', compact('mascotas', 'servicios', 'groomers', 'token'));
     }
 
-   
     /**
      * Cliente ve sus citas
      */
     public function misCitas(Request $request)
-{
-    $user = $this->getUserFromToken($request);
-    
-    if (!$user || !$user->esCliente()) {
-        return redirect('/')->with('error', 'No autorizado');
+    {
+        $user = $this->getUserFromToken($request);
+        
+        if (!$user || !$user->esCliente()) {
+            return redirect('/')->with('error', 'No autorizado');
+        }
+        
+        $mascotasIds = Mascota::where('id_cliente', $user->cliente->id_cliente)->pluck('id_mascota');
+        
+        // Citas ACTIVAS (reservado, programado) - NO concluidas
+        $citas = Cita::whereIn('id_mascota', $mascotasIds)
+            ->whereIn('estado', ['reservado', 'programado'])
+            ->with(['mascota', 'servicio', 'empleado.usuario'])
+            ->orderBy('fecha', 'desc')
+            ->get();
+        
+        // Citas CONCLUIDAS y SIN CALIFICAR
+        $citasPorCalificar = Cita::whereIn('id_mascota', $mascotasIds)
+            ->where('estado', 'concluido')
+            ->whereDoesntHave('calificacion')
+            ->with(['mascota', 'servicio', 'empleado.usuario'])
+            ->orderBy('fecha', 'desc')
+            ->get();
+        
+        // Citas ya CALIFICADAS (historial)
+        $citasCalificadas = Cita::whereIn('id_mascota', $mascotasIds)
+            ->where('estado', 'concluido')
+            ->whereHas('calificacion')
+            ->with(['mascota', 'servicio', 'empleado.usuario', 'calificacion'])
+            ->orderBy('fecha', 'desc')
+            ->get();
+        
+        $token = $request->query('token');
+        
+        return view('cliente.mis-citas', compact('citas', 'citasPorCalificar', 'citasCalificadas', 'token'));
     }
-    
-    $mascotasIds = Mascota::where('id_cliente', $user->cliente->id_cliente)->pluck('id_mascota');
-    
-    // Citas ACTIVAS (reservado, programado) - NO concluidas
-    $citas = Cita::whereIn('id_mascota', $mascotasIds)
-        ->whereIn('estado', ['reservado', 'programado'])
-        ->with(['mascota', 'servicio', 'empleado.usuario'])
-        ->orderBy('fecha', 'desc')
-        ->get();
-    
-    // Citas CONCLUIDAS y SIN CALIFICAR
-    $citasPorCalificar = Cita::whereIn('id_mascota', $mascotasIds)
-        ->where('estado', 'concluido')
-        ->whereDoesntHave('calificacion')
-        ->with(['mascota', 'servicio', 'empleado.usuario'])
-        ->orderBy('fecha', 'desc')
-        ->get();
-    
-    // Citas ya CALIFICADAS (historial)
-    $citasCalificadas = Cita::whereIn('id_mascota', $mascotasIds)
-        ->where('estado', 'concluido')
-        ->whereHas('calificacion')
-        ->with(['mascota', 'servicio', 'empleado.usuario', 'calificacion'])
-        ->orderBy('fecha', 'desc')
-        ->get();
-    
-    $token = $request->query('token');
-    
-    return view('cliente.mis-citas', compact('citas', 'citasPorCalificar', 'citasCalificadas', 'token'));
-}
-   
 
     /**
      * Recepción/Admin confirma cita
      */
-    /**
- * Recepción/Admin confirma cita
- */
-public function confirmarCita(Request $request, $id)
-{
-    $user = $this->getUserFromToken($request);
-    
-    if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
-        return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+    public function confirmarCita(Request $request, $id)
+    {
+        $user = $this->getUserFromToken($request);
+        
+        if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
+            return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+        }
+        
+        $cita = Cita::findOrFail($id);
+        
+        // Solo se puede confirmar si está en estado 'reservado'
+        if ($cita->estado != 'reservado') {
+            return response()->json(['success' => false, 'message' => 'Esta cita no está pendiente de confirmación'], 400);
+        }
+        
+        $cita->estado = 'programado';
+        $cita->save();
+        
+        // Enviar email de confirmación
+        $this->enviarEmailCita($cita, 'confirmacion');
+        
+        \App\Services\AuditLogService::registrar(
+            $user->id_usuario,
+            'Confirmó cita ID: ' . $id,
+            $request
+        );
+        
+        // NOTIFICACIONES
+        $cliente = $cita->mascota->cliente;
+        
+        NotificacionController::crear(
+            $cliente->id_usuario,
+            'cita_confirmada',
+            "Tu cita para {$cita->mascota->nombre} el {$cita->fecha} a las {$cita->hora_inicio} ha sido confirmada."
+        );
+        
+        return response()->json(['success' => true, 'message' => 'Cita confirmada correctamente']);
     }
-    
-    $cita = Cita::findOrFail($id);
-    
-    // Solo se puede confirmar si está en estado 'reservado'
-    if ($cita->estado != 'reservado') {
-        return response()->json(['success' => false, 'message' => 'Esta cita no está pendiente de confirmación'], 400);
-    }
-    
-    $cita->estado = 'programado';
-    $cita->save();
-    // Enviar email de confirmación
-    $this->enviarEmailCita($cita, 'confirmacion');
-    \App\Services\AuditLogService::registrar(
-        $user->id_usuario,
-        'Confirmó cita ID: ' . $id,
-        $request
-    );
-    
-    // NOTIFICACIONES - MOVER ANTES DEL RETURN
-    // =========================================================
-    $cliente = $cita->mascota->cliente;
-    
-    // Crear notificación en sistema
-    NotificacionController::crear(
-        $cliente->id_usuario,
-        'cita_confirmada',
-        "Tu cita para {$cita->mascota->nombre} el {$cita->fecha} a las {$cita->hora_inicio} ha sido confirmada."
-    );
-    
-    
-    
-    return response()->json(['success' => true, 'message' => 'Cita confirmada correctamente']);
-}
 
     /**
      * Agenda maestra (Admin y Recepción)
@@ -382,88 +406,94 @@ public function confirmarCita(Request $request, $id)
      * Obtener horarios disponibles
      */
     public function getHorariosDisponibles(Request $request)
-{
-    $fecha = $request->query('fecha');
-    $empleadoId = $request->query('empleado_id');
-    $servicioId = $request->query('servicio_id');
-    $mascotaId = $request->query('mascota_id');
-    $citaId = $request->query('cita_id');
+    {
+        $fecha = $request->query('fecha');
+        $empleadoId = $request->query('empleado_id');
+        $servicioId = $request->query('servicio_id');
+        $mascotaId = $request->query('mascota_id');
+        $citaId = $request->query('cita_id');
 
-    Log::info("=== HORARIOS DISPONIBLES ===");
-    Log::info("fecha: $fecha, empleado: $empleadoId, servicio: $servicioId, mascota: $mascotaId, citaId: $citaId");
+        Log::info("=== HORARIOS DISPONIBLES ===");
+        Log::info("fecha: $fecha, empleado: $empleadoId, servicio: $servicioId, mascota: $mascotaId, citaId: $citaId");
 
-    if (!$fecha || !$empleadoId || !$servicioId || !$mascotaId) {
-        return response()->json([]);
-    }
-
-    $empleado = Empleado::find($empleadoId);
-    if (!$empleado) {
-        return response()->json([]);
-    }
-
-    $turno = $empleado->turno ?? 'Completo';
-    $horariosTurno = $this->getHorarioPorTurno($turno);
-
-    $servicio = Servicio::find($servicioId);
-    $mascota = Mascota::find($mascotaId);
-
-    if (!$servicio || !$mascota) {
-        return response()->json([]);
-    }
-
-    // ✅ CORREGIDO: una sola llamada a cada función
-    $tamaño = $this->getTamañoMascota($mascota);
-    $temperamento = $mascota->temperamento_general;
-    $duracion = $this->getDuracionAjustada($servicio->duracion_minutos, $tamaño, $temperamento);
-    
-    $slots = [];
-    $horaActual = Carbon::parse($horariosTurno['inicio']);
-    $horaFin = Carbon::parse($horariosTurno['fin']);
-
-    while ($horaActual->copy()->addMinutes($duracion) <= $horaFin) {
-        $slotFin = $horaActual->copy()->addMinutes($duracion);
-        
-        $conflicto = Cita::where('id_empleado', $empleadoId)
-            ->where('fecha', $fecha)
-            ->where('estado', '!=', 'cancelado')
-            ->when($citaId, function($query) use ($citaId) {
-                return $query->where('id_cita', '!=', $citaId);
-            })
-            ->where(function ($query) use ($horaActual, $slotFin) {
-                $query->whereBetween('hora_inicio', [$horaActual->format('H:i:s'), $slotFin->format('H:i:s')])
-                      ->orWhereBetween('hora_fin', [$horaActual->format('H:i:s'), $slotFin->format('H:i:s')])
-                      ->orWhere(function ($q) use ($horaActual, $slotFin) {
-                          $q->where('hora_inicio', '<=', $horaActual->format('H:i:s'))
-                            ->where('hora_fin', '>=', $slotFin->format('H:i:s'));
-                      });
-            })
-            ->exists();
-
-        if (!$conflicto) {
-            $slots[] = [
-                'hora_inicio' => $horaActual->format('H:i'),
-                'hora_fin' => $slotFin->format('H:i'),
-                'duracion' => $duracion
-            ];
+        if (!$fecha || !$empleadoId || !$servicioId || !$mascotaId) {
+            return response()->json([]);
         }
 
-        $horaActual->addMinutes(15);
+        // ✅ VALIDAR SI ES DÍA NO LABORABLE
+        if ($this->esFechaNoLaborable($fecha)) {
+            Log::info("Día no laborable: $fecha - No se muestran horarios");
+            return response()->json([]);
+        }
+
+        $empleado = Empleado::find($empleadoId);
+        if (!$empleado) {
+            return response()->json([]);
+        }
+
+        $turno = $empleado->turno ?? 'Completo';
+        $horariosTurno = $this->getHorarioPorTurno($turno);
+
+        $servicio = Servicio::find($servicioId);
+        $mascota = Mascota::find($mascotaId);
+
+        if (!$servicio || !$mascota) {
+            return response()->json([]);
+        }
+
+        // Calcular duración ajustada
+        $tamaño = $this->getTamañoMascota($mascota);
+        $temperamento = $mascota->temperamento_general;
+        $duracion = $this->getDuracionAjustada($servicio->duracion_minutos, $tamaño, $temperamento);
+        
+        $slots = [];
+        $horaActual = Carbon::parse($horariosTurno['inicio']);
+        $horaFin = Carbon::parse($horariosTurno['fin']);
+
+        while ($horaActual->copy()->addMinutes($duracion) <= $horaFin) {
+            $slotFin = $horaActual->copy()->addMinutes($duracion);
+            
+            $conflicto = Cita::where('id_empleado', $empleadoId)
+                ->where('fecha', $fecha)
+                ->where('estado', '!=', 'cancelado')
+                ->when($citaId, function($query) use ($citaId) {
+                    return $query->where('id_cita', '!=', $citaId);
+                })
+                ->where(function ($query) use ($horaActual, $slotFin) {
+                    $query->whereBetween('hora_inicio', [$horaActual->format('H:i:s'), $slotFin->format('H:i:s')])
+                          ->orWhereBetween('hora_fin', [$horaActual->format('H:i:s'), $slotFin->format('H:i:s')])
+                          ->orWhere(function ($q) use ($horaActual, $slotFin) {
+                              $q->where('hora_inicio', '<=', $horaActual->format('H:i:s'))
+                                ->where('hora_fin', '>=', $slotFin->format('H:i:s'));
+                          });
+                })
+                ->exists();
+
+            if (!$conflicto) {
+                $slots[] = [
+                    'hora_inicio' => $horaActual->format('H:i'),
+                    'hora_fin' => $slotFin->format('H:i'),
+                    'duracion' => $duracion
+                ];
+            }
+
+            $horaActual->addMinutes(30); // Avanzar cada 30 minutos para menos slots
+        }
+
+        return response()->json($slots);
     }
 
-    return response()->json($slots);
-}
+    private function getHorarioPorTurno($turno)
+    {
+        $horarios = [
+            'Mañana' => ['inicio' => '08:00:00', 'fin' => '14:00:00'],
+            'Tarde' => ['inicio' => '14:00:00', 'fin' => '20:00:00'],
+            'Noche' => ['inicio' => '20:00:00', 'fin' => '23:59:00'],
+            'Completo' => ['inicio' => '08:00:00', 'fin' => '20:00:00'],
+        ];
 
-   private function getHorarioPorTurno($turno)
-{
-    $horarios = [
-        'Mañana' => ['inicio' => '08:00:00', 'fin' => '14:00:00'],
-        'Tarde' => ['inicio' => '14:00:00', 'fin' => '20:00:00'],
-        'Noche' => ['inicio' => '20:00:00', 'fin' => '23:59:00'],  // ← Cambiado: no cruza medianoche
-        'Completo' => ['inicio' => '08:00:00', 'fin' => '20:00:00'],
-    ];
-
-    return $horarios[$turno] ?? $horarios['Completo'];
-}
+        return $horarios[$turno] ?? $horarios['Completo'];
+    }
 
     private function getTamañoMascota($mascota)
     {
@@ -477,173 +507,191 @@ public function confirmarCita(Request $request, $id)
         return 'pequeño';
     }
 
-   private function getDuracionAjustada($duracionBase, $tamaño, $temperamento = null)
-{
-    $ajustesTamaño = [
-        'pequeño' => 1.0,
-        'mediano' => 1.10,
-        'grande' => 1.15,
-        'gigante' => 1.30,
-    ];
-    $factor = $ajustesTamaño[strtolower($tamaño)] ?? 1.0;
-    $duracion = round($duracionBase * $factor);
-    
-    // Ajuste por temperamento (nervioso/agresivo = +15 minutos)
-    if (in_array(strtolower($temperamento), ['nervioso', 'agresivo'])) {
-        $duracion += 15;
+    private function getDuracionAjustada($duracionBase, $tamaño, $temperamento = null)
+    {
+        $ajustesTamaño = [
+            'pequeño' => 1.0,
+            'mediano' => 1.10,
+            'grande' => 1.15,
+            'gigante' => 1.30,
+        ];
+        $factor = $ajustesTamaño[strtolower($tamaño)] ?? 1.0;
+        $duracion = round($duracionBase * $factor);
+        
+        // Ajuste por temperamento (nervioso/agresivo = +15 minutos)
+        if (in_array(strtolower($temperamento), ['nervioso', 'agresivo'])) {
+            $duracion += 15;
+        }
+        
+        return ceil($duracion / 15) * 15;
     }
-    
-    return ceil($duracion / 15) * 15;
-}
-    /**
- * Guardar solicitud de cita (estado: reservado)
- */
-public function solicitarStore(Request $request)
-{
-    $user = $this->getUserFromToken($request);
-    if (!$user || !$user->esCliente()) {
-        return redirect('/')->with('error', 'No autorizado');
-    }
-    
-    $request->validate([
-        'id_mascota' => 'required|exists:mascotas,id_mascota',
-        'id_servicio' => 'required|exists:servicios,id_servicio',
-        'id_empleado' => 'required|exists:empleados,id_empleado',
-        'fecha' => 'required|date',
-        'hora_inicio' => 'required',
-        'hora_fin' => 'required',
-    ]);
-    
-    $cita = Cita::create([
-        'id_mascota' => $request->id_mascota,
-        'id_servicio' => $request->id_servicio,
-        'id_empleado' => $request->id_empleado,
-        'fecha' => $request->fecha,
-        'hora_inicio' => $request->hora_inicio,
-        'hora_fin' => $request->hora_fin,
-        'estado' => 'reservado',  // ← CAMBIADO de 'pendiente' a 'reservado'
-        'tipo_cita' => 'normal',
-        'fecha_registro' => Carbon::now(),
-    ]);
-     $this->enviarEmailCita($cita, 'solicitud');
-    
-    AuditLogService::registrar(
-        $user->id_usuario,
-        'Solicitó cita para mascota ID: ' . $request->id_mascota,
-        $request
-    );
-    
-    $token = $request->query('token');
-    return redirect('/cliente/mis-citas?token=' . $token)
-        ->with('success', '✅ Cita solicitada. Espera confirmación de recepción.');
-}
-public function citasPendientes(Request $request)
-{
-    $user = $this->getUserFromToken($request);
-    
-    if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
-        return redirect('/')->with('error', 'No autorizado');
-    }
-    $rol = $user->esAdmin() ? 'admin' : 'recepcion';
-    
-    
-    $citas = Cita::where('estado', 'reservado')  // ← CAMBIADO de 'pendiente' a 'reservado'
-        ->with(['mascota.cliente.usuario', 'servicio', 'empleado.usuario'])
-        ->orderBy('fecha', 'asc')
-        ->get();
-    
-    $token = $request->query('token');
-    
-    return view('personal.citas-pendientes', compact('citas', 'token', 'rol'));
-}
-/**
- * Cliente cancela su propia cita
- */
-public function clienteCancelar(Request $request, $id)
-{
-    $user = $this->getUserFromToken($request);
-    
-    if (!$user || !$user->esCliente()) {
-        return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
-    }
-    
-    $cita = Cita::findOrFail($id);
-    
-    // Verificar que la cita pertenece al cliente
-    $mascota = Mascota::find($cita->id_mascota);
-    if (!$mascota || $mascota->id_cliente != $user->cliente->id_cliente) {
-        return response()->json(['success' => false, 'message' => 'Esta cita no te pertenece'], 401);
-    }
-    
-    // Solo se puede cancelar si está reservado o programado
-    if (!in_array($cita->estado, ['reservado', 'programado'])) {
-        return response()->json(['success' => false, 'message' => 'Esta cita ya no se puede cancelar'], 400);
-    }
-    
-    $motivo = $request->input('motivo');
-    $observaciones = $request->input('observaciones');
-    
-    $textoCancelacion = "CANCELADA POR CLIENTE - Motivo: $motivo";
-    if ($observaciones) {
-        $textoCancelacion .= " - Observaciones: $observaciones";
-    }
-    
-    $cita->estado = 'cancelado';
-    $cita->observaciones = $textoCancelacion;
-    $cita->save();
-    
-    AuditLogService::registrar(
-        $user->id_usuario,
-        'Cliente canceló cita ID: ' . $id . ' - Motivo: ' . $motivo,
-        $request
-    );
-    
-    return response()->json(['success' => true, 'message' => 'Cita cancelada correctamente']);
-}
-// =========================================================
-// ADMIN - VER TODAS LAS CITAS
-// =========================================================
-public function todasCitas(Request $request)
-{
-    $user = $this->getUserFromToken($request);
-    if (!$user || $user->rol->nombre !== 'Administrador') {
-        return redirect('/');
-    }
-    
-    $token = $request->query('token');
-    
-    // Obtener todas las citas con relaciones
-    $citas = Cita::with(['mascota', 'servicio', 'empleado.usuario'])
-        ->orderBy('fecha', 'desc')
-        ->orderBy('hora_inicio', 'asc')
-        ->paginate(20);
-    
-    // Estadísticas para resumen
-    $totalCitas = Cita::count();
-    $citasHoy = Cita::whereDate('fecha', today())->count();
-    $citasPendientes = Cita::where('estado', 'reservado')->count();
-    $citasProgramadas = Cita::where('estado', 'programado')->count();
-    $citasConcluidas = Cita::where('estado', 'concluido')->count();
-    $citasCanceladas = Cita::where('estado', 'cancelado')->count();
-    
-    return view('admin.citas.todas', compact(
-        'citas', 'token', 'totalCitas', 'citasHoy',
-        'citasPendientes', 'citasProgramadas', 
-        'citasConcluidas', 'citasCanceladas'
-    ));
-}
-// Método privado para enviar emails
-// DESPUÉS (PÚBLICO - se puede llamar desde Tinker)
-public function enviarEmailCita($cita, $tipo)
-{
-    try {
-        $cliente = $cita->mascota->cliente;
-        $email = $cliente->usuario->correo;
-        Mail::to($email)->send(new CitaMail($cita, $tipo));
-        Log::info("Email enviado: $tipo - Cita ID: {$cita->id_cita}");
-    } catch (\Exception $e) {
-        Log::error("Error enviando email: " . $e->getMessage());
-    }
-}
 
+    /**
+     * Guardar solicitud de cita (estado: reservado)
+     */
+    public function solicitarStore(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || !$user->esCliente()) {
+            return redirect('/')->with('error', 'No autorizado');
+        }
+        
+        // ✅ VALIDAR DÍA NO LABORABLE
+        if ($this->esFechaNoLaborable($request->fecha)) {
+            return back()->with('error', '❌ El día seleccionado no está disponible para agendar citas (Feriado o Mantenimiento).');
+        }
+        
+        $request->validate([
+            'id_mascota' => 'required|exists:mascotas,id_mascota',
+            'id_servicio' => 'required|exists:servicios,id_servicio',
+            'id_empleado' => 'required|exists:empleados,id_empleado',
+            'fecha' => 'required|date',
+            'hora_inicio' => 'required',
+            'hora_fin' => 'required',
+        ]);
+        
+        // Verificar que la mascota pertenezca al cliente
+        $mascota = Mascota::where('id_mascota', $request->id_mascota)
+            ->where('id_cliente', $user->cliente->id_cliente)
+            ->first();
+            
+        if (!$mascota) {
+            return back()->with('error', '❌ La mascota no te pertenece');
+        }
+        
+        // Verificar conflicto de horario
+        $conflicto = Cita::where('id_empleado', $request->id_empleado)
+            ->where('fecha', $request->fecha)
+            ->where('estado', '!=', 'cancelado')
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('hora_inicio', [$request->hora_inicio, $request->hora_fin])
+                      ->orWhereBetween('hora_fin', [$request->hora_inicio, $request->hora_fin]);
+            })
+            ->exists();
+            
+        if ($conflicto) {
+            return back()->with('error', '❌ Horario no disponible');
+        }
+        
+        $cita = Cita::create([
+            'id_mascota' => $request->id_mascota,
+            'id_servicio' => $request->id_servicio,
+            'id_empleado' => $request->id_empleado,
+            'fecha' => $request->fecha,
+            'hora_inicio' => $request->hora_inicio,
+            'hora_fin' => $request->hora_fin,
+            'estado' => 'reservado',
+            'tipo_cita' => 'normal',
+            'fecha_registro' => Carbon::now(),
+        ]);
+        
+        $this->enviarEmailCita($cita, 'solicitud');
+        
+        AuditLogService::registrar(
+            $user->id_usuario,
+            'Solicitó cita para mascota ID: ' . $request->id_mascota,
+            $request
+        );
+        
+        $token = $request->query('token');
+        return redirect('/cliente/mis-citas?token=' . $token)
+            ->with('success', '✅ Cita solicitada. Espera confirmación de recepción.');
+    }
+
+    public function citasPendientes(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        
+        if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
+            return redirect('/')->with('error', 'No autorizado');
+        }
+        $rol = $user->esAdmin() ? 'admin' : 'recepcion';
+        
+        $citas = Cita::where('estado', 'reservado')
+            ->with(['mascota.cliente.usuario', 'servicio', 'empleado.usuario'])
+            ->orderBy('fecha', 'asc')
+            ->get();
+        
+        $token = $request->query('token');
+        
+        return view('personal.citas-pendientes', compact('citas', 'token', 'rol'));
+    }
+
+    /**
+     * Cliente cancela su propia cita
+     */
+    public function clienteCancelar(Request $request, $id)
+    {
+        $user = $this->getUserFromToken($request);
+        
+        if (!$user || !$user->esCliente()) {
+            return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+        }
+        
+        $cita = Cita::findOrFail($id);
+        
+        // Verificar que la cita pertenece al cliente
+        $mascota = Mascota::find($cita->id_mascota);
+        if (!$mascota || $mascota->id_cliente != $user->cliente->id_cliente) {
+            return response()->json(['success' => false, 'message' => 'Esta cita no te pertenece'], 401);
+        }
+        
+        // Solo se puede cancelar si está reservado o programado
+        if (!in_array($cita->estado, ['reservado', 'programado'])) {
+            return response()->json(['success' => false, 'message' => 'Esta cita ya no se puede cancelar'], 400);
+        }
+        
+        $motivo = $request->input('motivo');
+        $observaciones = $request->input('observaciones');
+        
+        $textoCancelacion = "CANCELADA POR CLIENTE - Motivo: $motivo";
+        if ($observaciones) {
+            $textoCancelacion .= " - Observaciones: $observaciones";
+        }
+        
+        $cita->estado = 'cancelado';
+        $cita->observaciones = $textoCancelacion;
+        $cita->save();
+        
+        AuditLogService::registrar(
+            $user->id_usuario,
+            'Cliente canceló cita ID: ' . $id . ' - Motivo: ' . $motivo,
+            $request
+        );
+        
+        return response()->json(['success' => true, 'message' => 'Cita cancelada correctamente']);
+    }
+
+    /**
+     * ADMIN - VER TODAS LAS CITAS
+     */
+    public function todasCitas(Request $request)
+    {
+        $user = $this->getUserFromToken($request);
+        if (!$user || $user->rol->nombre !== 'Administrador') {
+            return redirect('/');
+        }
+        
+        $token = $request->query('token');
+        
+        // Obtener todas las citas con relaciones
+        $citas = Cita::with(['mascota', 'servicio', 'empleado.usuario'])
+            ->orderBy('fecha', 'desc')
+            ->orderBy('hora_inicio', 'asc')
+            ->paginate(20);
+        
+        // Estadísticas para resumen
+        $totalCitas = Cita::count();
+        $citasHoy = Cita::whereDate('fecha', today())->count();
+        $citasPendientes = Cita::where('estado', 'reservado')->count();
+        $citasProgramadas = Cita::where('estado', 'programado')->count();
+        $citasConcluidas = Cita::where('estado', 'concluido')->count();
+        $citasCanceladas = Cita::where('estado', 'cancelado')->count();
+        
+        return view('admin.citas.todas', compact(
+            'citas', 'token', 'totalCitas', 'citasHoy',
+            'citasPendientes', 'citasProgramadas', 
+            'citasConcluidas', 'citasCanceladas'
+        ));
+    }
 }
