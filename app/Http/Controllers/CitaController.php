@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Mail\CitaMail;
+use Illuminate\Support\Facades\Mail;
 use App\Models\Cita;
 use App\Models\Mascota;
 use App\Models\Servicio;
@@ -325,7 +326,8 @@ public function confirmarCita(Request $request, $id)
     
     $cita->estado = 'programado';
     $cita->save();
-    
+    // Enviar email de confirmación
+    $this->enviarEmailCita($cita, 'confirmacion');
     \App\Services\AuditLogService::registrar(
         $user->id_usuario,
         'Confirmó cita ID: ' . $id,
@@ -523,6 +525,7 @@ public function solicitarStore(Request $request)
         'tipo_cita' => 'normal',
         'fecha_registro' => Carbon::now(),
     ]);
+     $this->enviarEmailCita($cita, 'solicitud');
     
     AuditLogService::registrar(
         $user->id_usuario,
@@ -629,6 +632,18 @@ public function todasCitas(Request $request)
         'citasConcluidas', 'citasCanceladas'
     ));
 }
-
+// Método privado para enviar emails
+// DESPUÉS (PÚBLICO - se puede llamar desde Tinker)
+public function enviarEmailCita($cita, $tipo)
+{
+    try {
+        $cliente = $cita->mascota->cliente;
+        $email = $cliente->usuario->correo;
+        Mail::to($email)->send(new CitaMail($cita, $tipo));
+        Log::info("Email enviado: $tipo - Cita ID: {$cita->id_cita}");
+    } catch (\Exception $e) {
+        Log::error("Error enviando email: " . $e->getMessage());
+    }
+}
 
 }

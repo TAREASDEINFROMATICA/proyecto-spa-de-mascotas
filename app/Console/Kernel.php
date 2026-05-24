@@ -26,7 +26,7 @@ class Kernel extends ConsoleKernel
     {
         // Enviar recordatorios de citas todos los días a las 9:00 AM
         $schedule->command('citas:recordatorios')->dailyAt('09:00');
-        
+         $schedule->command('citas:recordatorio')->everyMinute();
         // Opcional: Enviar recordatorios también a las 2:00 PM
         // $schedule->command('citas:recordatorios')->dailyAt('14:00');
     }
