@@ -380,86 +380,88 @@ public function confirmarCita(Request $request, $id)
      * Obtener horarios disponibles
      */
     public function getHorariosDisponibles(Request $request)
-    {
-        $fecha = $request->query('fecha');
-        $empleadoId = $request->query('empleado_id');
-        $servicioId = $request->query('servicio_id');
-        $mascotaId = $request->query('mascota_id');
-        $citaId = $request->query('cita_id');
+{
+    $fecha = $request->query('fecha');
+    $empleadoId = $request->query('empleado_id');
+    $servicioId = $request->query('servicio_id');
+    $mascotaId = $request->query('mascota_id');
+    $citaId = $request->query('cita_id');
 
-        Log::info("=== HORARIOS DISPONIBLES ===");
-        Log::info("fecha: $fecha, empleado: $empleadoId, servicio: $servicioId, mascota: $mascotaId, citaId: $citaId");
+    Log::info("=== HORARIOS DISPONIBLES ===");
+    Log::info("fecha: $fecha, empleado: $empleadoId, servicio: $servicioId, mascota: $mascotaId, citaId: $citaId");
 
-        if (!$fecha || !$empleadoId || !$servicioId || !$mascotaId) {
-            return response()->json([]);
-        }
-
-        $empleado = Empleado::find($empleadoId);
-        if (!$empleado) {
-            return response()->json([]);
-        }
-
-        $turno = $empleado->turno ?? 'Completo';
-        $horariosTurno = $this->getHorarioPorTurno($turno);
-
-        $servicio = Servicio::find($servicioId);
-        $mascota = Mascota::find($mascotaId);
-
-        if (!$servicio || !$mascota) {
-            return response()->json([]);
-        }
-
-        $tamaño = $this->getTamañoMascota($mascota);
-        $duracion = $this->getDuracionAjustada($servicio->duracion_minutos, $tamaño);
-
-        $slots = [];
-        $horaActual = Carbon::parse($horariosTurno['inicio']);
-        $horaFin = Carbon::parse($horariosTurno['fin']);
-
-        while ($horaActual->copy()->addMinutes($duracion) <= $horaFin) {
-            $slotFin = $horaActual->copy()->addMinutes($duracion);
-            
-            $conflicto = Cita::where('id_empleado', $empleadoId)
-                ->where('fecha', $fecha)
-                ->where('estado', '!=', 'cancelado')
-                ->when($citaId, function($query) use ($citaId) {
-                    return $query->where('id_cita', '!=', $citaId);
-                })
-                ->where(function ($query) use ($horaActual, $slotFin) {
-                    $query->whereBetween('hora_inicio', [$horaActual->format('H:i:s'), $slotFin->format('H:i:s')])
-                          ->orWhereBetween('hora_fin', [$horaActual->format('H:i:s'), $slotFin->format('H:i:s')])
-                          ->orWhere(function ($q) use ($horaActual, $slotFin) {
-                              $q->where('hora_inicio', '<=', $horaActual->format('H:i:s'))
-                                ->where('hora_fin', '>=', $slotFin->format('H:i:s'));
-                          });
-                })
-                ->exists();
-
-            if (!$conflicto) {
-                $slots[] = [
-                    'hora_inicio' => $horaActual->format('H:i'),
-                    'hora_fin' => $slotFin->format('H:i'),
-                    'duracion' => $duracion
-                ];
-            }
-
-            $horaActual->addMinutes(15);
-        }
-
-        return response()->json($slots);
+    if (!$fecha || !$empleadoId || !$servicioId || !$mascotaId) {
+        return response()->json([]);
     }
 
-    private function getHorarioPorTurno($turno)
-    {
-        $horarios = [
-            'Mañana' => ['inicio' => '08:00:00', 'fin' => '14:00:00'],
-            'Tarde' => ['inicio' => '14:00:00', 'fin' => '20:00:00'],
-            'Noche' => ['inicio' => '20:00:00', 'fin' => '02:00:00'],
-            'Completo' => ['inicio' => '08:00:00', 'fin' => '20:00:00'],
-        ];
-
-        return $horarios[$turno] ?? $horarios['Completo'];
+    $empleado = Empleado::find($empleadoId);
+    if (!$empleado) {
+        return response()->json([]);
     }
+
+    $turno = $empleado->turno ?? 'Completo';
+    $horariosTurno = $this->getHorarioPorTurno($turno);
+
+    $servicio = Servicio::find($servicioId);
+    $mascota = Mascota::find($mascotaId);
+
+    if (!$servicio || !$mascota) {
+        return response()->json([]);
+    }
+
+    // ✅ CORREGIDO: una sola llamada a cada función
+    $tamaño = $this->getTamañoMascota($mascota);
+    $temperamento = $mascota->temperamento_general;
+    $duracion = $this->getDuracionAjustada($servicio->duracion_minutos, $tamaño, $temperamento);
+    
+    $slots = [];
+    $horaActual = Carbon::parse($horariosTurno['inicio']);
+    $horaFin = Carbon::parse($horariosTurno['fin']);
+
+    while ($horaActual->copy()->addMinutes($duracion) <= $horaFin) {
+        $slotFin = $horaActual->copy()->addMinutes($duracion);
+        
+        $conflicto = Cita::where('id_empleado', $empleadoId)
+            ->where('fecha', $fecha)
+            ->where('estado', '!=', 'cancelado')
+            ->when($citaId, function($query) use ($citaId) {
+                return $query->where('id_cita', '!=', $citaId);
+            })
+            ->where(function ($query) use ($horaActual, $slotFin) {
+                $query->whereBetween('hora_inicio', [$horaActual->format('H:i:s'), $slotFin->format('H:i:s')])
+                      ->orWhereBetween('hora_fin', [$horaActual->format('H:i:s'), $slotFin->format('H:i:s')])
+                      ->orWhere(function ($q) use ($horaActual, $slotFin) {
+                          $q->where('hora_inicio', '<=', $horaActual->format('H:i:s'))
+                            ->where('hora_fin', '>=', $slotFin->format('H:i:s'));
+                      });
+            })
+            ->exists();
+
+        if (!$conflicto) {
+            $slots[] = [
+                'hora_inicio' => $horaActual->format('H:i'),
+                'hora_fin' => $slotFin->format('H:i'),
+                'duracion' => $duracion
+            ];
+        }
+
+        $horaActual->addMinutes(15);
+    }
+
+    return response()->json($slots);
+}
+
+   private function getHorarioPorTurno($turno)
+{
+    $horarios = [
+        'Mañana' => ['inicio' => '08:00:00', 'fin' => '14:00:00'],
+        'Tarde' => ['inicio' => '14:00:00', 'fin' => '20:00:00'],
+        'Noche' => ['inicio' => '20:00:00', 'fin' => '23:59:00'],  // ← Cambiado: no cruza medianoche
+        'Completo' => ['inicio' => '08:00:00', 'fin' => '20:00:00'],
+    ];
+
+    return $horarios[$turno] ?? $horarios['Completo'];
+}
 
     private function getTamañoMascota($mascota)
     {
@@ -473,20 +475,24 @@ public function confirmarCita(Request $request, $id)
         return 'pequeño';
     }
 
-    private function getDuracionAjustada($duracionBase, $tamaño)
-    {
-        $tiempoExtra = [
-            'pequeño' => 0,
-            'mediano' => 15,
-            'grande' => 30,
-            'gigante' => 45,
-        ];
-        
-        $extra = $tiempoExtra[strtolower($tamaño)] ?? 0;
-        $duracion = $duracionBase + $extra;
-        
-        return ceil($duracion / 15) * 15;
+   private function getDuracionAjustada($duracionBase, $tamaño, $temperamento = null)
+{
+    $ajustesTamaño = [
+        'pequeño' => 1.0,
+        'mediano' => 1.10,
+        'grande' => 1.15,
+        'gigante' => 1.30,
+    ];
+    $factor = $ajustesTamaño[strtolower($tamaño)] ?? 1.0;
+    $duracion = round($duracionBase * $factor);
+    
+    // Ajuste por temperamento (nervioso/agresivo = +15 minutos)
+    if (in_array(strtolower($temperamento), ['nervioso', 'agresivo'])) {
+        $duracion += 15;
     }
+    
+    return ceil($duracion / 15) * 15;
+}
     /**
  * Guardar solicitud de cita (estado: reservado)
  */
@@ -623,4 +629,6 @@ public function todasCitas(Request $request)
         'citasConcluidas', 'citasCanceladas'
     ));
 }
+
+
 }

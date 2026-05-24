@@ -34,10 +34,24 @@
         }
         h1::before { content: "✏️"; font-size: 28px; }
         
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+        label i {
+            margin-right: 6px;
+            color: #2196F3;
+            width: 18px;
+        }
         input, select { 
             width: 100%; 
             padding: 12px 14px; 
-            margin: 8px 0; 
             border: 2px solid #e2e8f0; 
             border-radius: 12px; 
             font-size: 14px; 
@@ -106,9 +120,22 @@
         input::placeholder { color: #94a3b8; }
         select { background: white; cursor: pointer; }
         
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .campos-groomer {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+            margin-top: 10px;
+        }
+        
         @media (max-width: 600px) {
             .container { padding: 25px; margin: 0 10px; }
             h1 { font-size: 24px; }
+            .row-2 { grid-template-columns: 1fr; gap: 0; }
         }
     </style>
 </head>
@@ -128,19 +155,67 @@
         
         <form method="POST" action="{{ route('empleados.update', $empleado->id_empleado) }}?token={{ $token }}">
             @csrf @method('PUT')
-            <input type="text" name="nombres" value="{{ $empleado->usuario->nombres }}" required>
-            <input type="text" name="apellidos" value="{{ $empleado->usuario->apellidos }}" required>
-            <input type="text" name="ci" value="{{ $empleado->usuario->ci }}" placeholder="Cédula de Identidad">
-            <input type="text" name="telefono" value="{{ $empleado->usuario->telefono }}" required>
-            <input type="text" name="especialidad" value="{{ $empleado->especialidad }}" placeholder="Especialidad">
-            <input type="number" name="capacidad_simultanea" value="{{ $empleado->capacidad_simultanea }}" min="1" max="10">
-            <select name="turno">
-                <option value="">Seleccionar turno</option>
-                <option value="Mañana" {{ $empleado->turno == 'Mañana' ? 'selected' : '' }}>🌅 Mañana (08:00 - 14:00)</option>
-                <option value="Tarde" {{ $empleado->turno == 'Tarde' ? 'selected' : '' }}>🌇 Tarde (14:00 - 20:00)</option>
-                <option value="Noche" {{ $empleado->turno == 'Noche' ? 'selected' : '' }}>🌙 Noche (20:00 - 02:00)</option>
-                <option value="Completo" {{ $empleado->turno == 'Completo' ? 'selected' : '' }}>🔄 Completo (08:00 - 20:00)</option>
-            </select>
+            
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> Nombres *</label>
+                <input type="text" name="nombres" value="{{ $empleado->usuario->nombres }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellidos *</label>
+                <input type="text" name="apellidos" value="{{ $empleado->usuario->apellidos }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-id-card"></i> Cédula de Identidad</label>
+                <input type="text" name="ci" value="{{ $empleado->usuario->ci }}" placeholder="Opcional">
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-phone"></i> Teléfono *</label>
+                <input type="text" name="telefono" value="{{ $empleado->usuario->telefono }}" required>
+            </div>
+            
+            <!-- Campos solo para Groomer -->
+            @if($empleado->cargo === 'Groomer')
+            <div class="campos-groomer">
+                <div class="form-group">
+                    <label><i class="fas fa-graduation-cap"></i> Especialidad</label>
+                    <input type="text" name="especialidad" value="{{ $empleado->especialidad }}" placeholder="Ej: Cortes, Baños, etc.">
+                </div>
+                
+                <div class="row-2">
+                    <div class="form-group">
+                        <label><i class="fas fa-users"></i> Capacidad Simultánea</label>
+                        <input type="number" name="capacidad_simultanea" value="{{ $empleado->capacidad_simultanea ?? 1 }}" min="1" max="10">
+                        <small>Mascotas que puede atender a la vez</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-day"></i> Capacidad Diaria *</label>
+                        <input type="number" name="capacidad_diaria" value="{{ $empleado->capacidad_diaria ?? 8 }}" min="1" max="20" required>
+                        <small>Máximo de citas por día</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-clock"></i> Turno</label>
+                    <select name="turno">
+                        <option value="">Seleccionar turno</option>
+                        <option value="Mañana" {{ $empleado->turno == 'Mañana' ? 'selected' : '' }}>🌅 Mañana (08:00 - 14:00)</option>
+                        <option value="Tarde" {{ $empleado->turno == 'Tarde' ? 'selected' : '' }}>🌇 Tarde (14:00 - 20:00)</option>
+                        <option value="Noche" {{ $empleado->turno == 'Noche' ? 'selected' : '' }}>🌙 Noche (20:00 - 02:00)</option>
+                        <option value="Completo" {{ $empleado->turno == 'Completo' ? 'selected' : '' }}>🔄 Completo (08:00 - 20:00)</option>
+                    </select>
+                </div>
+            </div>
+            @else
+                <!-- Recepción: campos ocultos con valores por defecto -->
+                <input type="hidden" name="especialidad" value="{{ $empleado->especialidad }}">
+                <input type="hidden" name="capacidad_simultanea" value="{{ $empleado->capacidad_simultanea ?? 1 }}">
+                <input type="hidden" name="capacidad_diaria" value="{{ $empleado->capacidad_diaria ?? 8 }}">
+                <input type="hidden" name="turno" value="{{ $empleado->turno }}">
+            @endif
 
             <button type="submit">💾 Guardar Cambios</button>
         </form>

@@ -167,6 +167,14 @@
             gap: 15px;
         }
         
+        /* Small para texto de ayuda */
+        small {
+            display: block;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #64748b;
+        }
+        
         @media (max-width: 600px) {
             .container { margin: 0 10px; border-radius: 20px; }
             .content { padding: 20px; }
@@ -264,13 +272,16 @@
                 </div>
                 
                 <div class="form-group">
-                    <label><i class="fas fa-brain"></i> Temperamento</label>
-                    <select name="temperamento_general">
-                        <option value="">Seleccionar temperamento</option>
-                        @foreach($temperamentos as $t)
-                            <option value="{{ $t }}" {{ $mascota->temperamento_general == $t ? 'selected' : '' }}>{{ ucfirst($t) }}</option>
-                        @endforeach
+                    <label><i class="fas fa-brain"></i> Temperamento *</label>
+                    <select name="temperamento_general" required>
+                        <option value="tranquilo" {{ $mascota->temperamento_general == 'tranquilo' ? 'selected' : '' }}>🐶 Tranquilo</option>
+                        <option value="nervioso" {{ $mascota->temperamento_general == 'nervioso' ? 'selected' : '' }}>😰 Nervioso</option>
+                        <option value="agresivo" {{ $mascota->temperamento_general == 'agresivo' ? 'selected' : '' }}>😠 Agresivo</option>
+                        <option value="miedoso" {{ $mascota->temperamento_general == 'miedoso' ? 'selected' : '' }}>😨 Miedoso</option>
+                        <option value="jugueton" {{ $mascota->temperamento_general == 'jugueton' ? 'selected' : '' }}>🎾 Juguetón</option>
+                        <option value="otro" {{ $mascota->temperamento_general == 'otro' ? 'selected' : '' }}>🤔 Otro</option>
                     </select>
+                    <small>El temperamento afecta la duración del servicio (+15 min si es nervioso o agresivo)</small>
                 </div>
                 
                 <div class="form-group">

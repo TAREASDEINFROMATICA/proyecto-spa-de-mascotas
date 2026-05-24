@@ -25,18 +25,40 @@ class AgendaController extends Controller
     }
 
     /**
-     * Obtener duración ajustada según el tamaño de la mascota
+     * Obtener duración ajustada según tamaño y temperamento de la mascota
      */
-    private function getDuracionAjustada($duracionBase, $tamaño)
+    private function getDuracionAjustada($duracionBase, $tamaño, $temperamento = null)
     {
-        $ajustes = [
+        // Ajuste por tamaño
+        $ajustesTamaño = [
             'pequeño' => 1.0,
             'mediano' => 1.10,
             'grande' => 1.15,
             'gigante' => 1.30,
         ];
-        $factor = $ajustes[strtolower($tamaño)] ?? 1.0;
-        return round($duracionBase * $factor);
+        $factor = $ajustesTamaño[strtolower($tamaño)] ?? 1.0;
+        $duracion = round($duracionBase * $factor);
+        
+        // Ajuste por temperamento (nervioso/agresivo = +15 minutos)
+        if (in_array(strtolower($temperamento), ['nervioso', 'agresivo'])) {
+            $duracion += 15;
+        }
+        
+        return ceil($duracion / 15) * 15;
+    }
+
+    /**
+     * Obtener tamaño de la mascota basado en peso
+     */
+    private function getTamañoMascota($mascota)
+    {
+        if ($mascota->peso) {
+            if ($mascota->peso <= 10) return 'pequeño';
+            if ($mascota->peso <= 25) return 'mediano';
+            if ($mascota->peso <= 40) return 'grande';
+            return 'gigante';
+        }
+        return 'pequeño';
     }
 
     /**
@@ -56,7 +78,7 @@ class AgendaController extends Controller
         
         foreach ($citas as $cita) {
             if ($horaInicio < $cita->hora_fin && $horaFin > $cita->hora_inicio) {
-                return true; // Hay conflicto
+                return true;
             }
         }
         return false;
@@ -84,13 +106,25 @@ class AgendaController extends Controller
         $servicio = Servicio::find($servicioId);
         $mascota = Mascota::find($mascotaId);
         
-        if (!$servicio) {
+        if (!$servicio || !$mascota) {
             return response()->json([]);
         }
         
-        // Calcular duración ajustada por tamaño
-        $tamaño = $mascota->tamaño ?? 'pequeño';
-        $duracion = $this->getDuracionAjustada($servicio->duracion_minutos, $tamaño);
+        // Calcular duración ajustada por tamaño y temperamento
+        $tamaño = $this->getTamañoMascota($mascota);
+        $temperamento = $mascota->temperamento_general;
+        $duracion = $this->getDuracionAjustada($servicio->duracion_minutos, $tamaño, $temperamento);
+        
+        // Validar capacidad diaria del groomer
+        $citasHoy = Cita::where('id_empleado', $empleadoId)
+            ->where('fecha', $fecha)
+            ->whereIn('estado', ['programado', 'reservado'])
+            ->count();
+        
+        $empleado = Empleado::find($empleadoId);
+        if ($citasHoy >= $empleado->capacidad_diaria) {
+            return response()->json([]);
+        }
         
         // Generar slots
         $slots = [];
@@ -100,70 +134,61 @@ class AgendaController extends Controller
         while ($horaActual->copy()->addMinutes($duracion) <= $horaFin) {
             $slotFin = $horaActual->copy()->addMinutes($duracion);
             
-            // Verificar conflictos
             if (!$this->hayConflicto($empleadoId, $fecha, $horaActual->format('H:i:s'), $slotFin->format('H:i:s'))) {
                 $slots[] = [
                     'hora_inicio' => $horaActual->format('H:i'),
                     'hora_fin' => $slotFin->format('H:i'),
-                    'duracion' => $duracion
+                    'duracion' => $duracion,
+                    'tiempo_extra' => $this->getTiempoExtraInfo($tamaño, $temperamento)
                 ];
             }
             
-            $horaActual->addMinutes(15); // Avanzar en intervalos de 15 minutos
+            $horaActual->addMinutes(15);
         }
         
         return response()->json($slots);
     }
 
     /**
-     * Vista de agenda para admin/recepción
+     * Obtener información del tiempo extra para mostrar al cliente
      */
-   public function agendaMaestro(Request $request)
-{
-    $user = $this->getUserFromToken($request);
-    if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
-        return redirect('/');
+    private function getTiempoExtraInfo($tamaño, $temperamento)
+    {
+        $info = [];
+        if ($tamaño != 'pequeño') {
+            $info[] = ucfirst($tamaño);
+        }
+        if (in_array(strtolower($temperamento), ['nervioso', 'agresivo'])) {
+            $info[] = 'Temperamento ' . $temperamento;
+        }
+        return implode(' + ', $info);
     }
-    
-    // Determinar el rol para la redirección
-    $rol = $user->esAdmin() ? 'admin' : 'recepcion';
-    
-    $fecha = $request->query('fecha', Carbon::now()->format('Y-m-d'));
-    $fechaObj = Carbon::parse($fecha);
-    
-    // Obtener groomers
-    $groomers = Empleado::where('cargo', 'Groomer')
-        ->with('usuario')
-        ->get();
-    
-    // Obtener citas del día
-    $citas = Cita::where('fecha', $fecha)
-        ->with(['mascota.cliente.usuario', 'servicio', 'empleado.usuario'])
-        ->get();
-    
-    $token = $request->query('token');
-    
-    // Pasar $rol a la vista
-    return view('admin.agenda.index', compact('groomers', 'citas', 'fecha', 'fechaObj', 'token', 'rol'));
-}
 
     /**
-     * Formulario para crear cita (admin/recepción)
+     * Vista de agenda para admin/recepción
      */
-    public function createCita(Request $request)
+    public function agendaMaestro(Request $request)
     {
         $user = $this->getUserFromToken($request);
         if (!$user || !($user->esAdmin() || $user->rol->nombre === 'Recepcion')) {
             return redirect('/');
         }
         
-        $groomers = Empleado::where('cargo', 'Groomer')->with('usuario')->get();
-        $servicios = Servicio::where('estado', 'activo')->get();
-        $mascotas = Mascota::where('estado', 'activa')->with('cliente.usuario')->get();
+        $rol = $user->esAdmin() ? 'admin' : 'recepcion';
+        $fecha = $request->query('fecha', Carbon::now()->format('Y-m-d'));
+        $fechaObj = Carbon::parse($fecha);
+        
+        $groomers = Empleado::where('cargo', 'Groomer')
+            ->with('usuario')
+            ->get();
+        
+        $citas = Cita::where('fecha', $fecha)
+            ->with(['mascota', 'servicio', 'empleado.usuario'])
+            ->get();
         
         $token = $request->query('token');
         
-        return view('admin.agenda.create', compact('groomers', 'servicios', 'mascotas', 'token'));
+        return view('admin.agenda.index', compact('groomers', 'citas', 'fecha', 'fechaObj', 'token', 'rol'));
     }
 
     private function getDiaSemana($dayOfWeek)

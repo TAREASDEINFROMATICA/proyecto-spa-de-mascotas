@@ -229,6 +229,11 @@
                 <span>💡 Tu solicitud quedará en estado <strong>"Pendiente"</strong> hasta que recepción la confirme.</span>
             </div>
             
+            <div class="info-banner">
+                <i class="fas fa-info-circle"></i>
+                <span>💡 La duración del servicio puede variar según el <strong>tamaño</strong> y <strong>temperamento</strong> de tu mascota.</span>
+            </div>
+            
             @if($errors->any())
                 <div class="error">
                     <i class="fas fa-exclamation-circle"></i>
