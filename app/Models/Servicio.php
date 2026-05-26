@@ -55,4 +55,15 @@ class Servicio extends Model
 {
     return $this->hasMany(Cita::class, 'id_servicio');
 }
+// Relación con checklist_items
+// Relación con checklist_items (muchos a muchos)
+public function checklistItems()
+{
+    return $this->belongsToMany(
+        ChecklistItem::class, 
+        'servicio_checklist', 
+        'id_servicio', 
+        'id_item'
+    );
+}
 }

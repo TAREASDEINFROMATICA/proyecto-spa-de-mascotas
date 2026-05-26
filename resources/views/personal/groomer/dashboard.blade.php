@@ -94,16 +94,17 @@
             <div class="menu-grid">
                 <div class="menu-item"><a href="#" id="enlaceMisCitas"><i class="fas fa-calendar-check"></i> Mis Citas</a></div>
                 <div class="menu-item"><a href="#" id="enlaceMisMascotas"><i class="fas fa-dog"></i> Mascotas Asignadas</a></div>
-                
+                <!-- 🔽 NUEVO BOTÓN DE FICHA CHECKLIST 🔽 -->
+                <div class="menu-item"><a href="#" id="enlaceChecklist"><i class="fas fa-clipboard-list"></i> Ficha Checklist</a></div>
                 <div class="menu-item"><a href="#" id="enlaceGaleria"><i class="fas fa-images"></i> Galería de Fotos</a></div>
                 <div class="menu-item"><a href="#" id="enlaceInsumos"><i class="fas fa-boxes"></i> Mis Insumos</a></div>
             </div>
             
             <h2><i class="fas fa-chart-line"></i> Reportes y Estadísticas</h2>
             <div class="menu-grid">
-                <div class="menu-item"><a href="#" id="enlaceCalificaciones" style="background: #ff9800; border-radius: 12px;"><i class="fas fa-star"></i> Mis Calificaciones</a></div>
-                <div class="menu-item"><a href="#" id="enlaceEstadisticas" style="background: #9C27B0; border-radius: 12px;"><i class="fas fa-chart-line"></i> Mis Estadísticas</a></div>
-                <div class="menu-item"><a href="#" id="enlaceExportarCSV" style="background: #f44336; border-radius: 12px;"><i class="fas fa-file-csv"></i> Exportar Servicios</a></div>
+                <div class="menu-item"><a href="#" id="enlaceCalificaciones"><i class="fas fa-star"></i> Mis Calificaciones</a></div>
+                <div class="menu-item"><a href="#" id="enlaceEstadisticas"><i class="fas fa-chart-line"></i> Mis Estadísticas</a></div>
+                <div class="menu-item"><a href="#" id="enlaceExportarCSV"><i class="fas fa-file-csv"></i> Exportar Servicios</a></div>
             </div>
             
             <button class="btn-cambiar" onclick="abrirModal()">

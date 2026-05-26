@@ -57,4 +57,9 @@ public function calificacion()
 {
     return $this->hasOne(Calificacion::class, 'id_cita');
 }
+// Relación con ficha_checklist
+public function fichaChecklist()
+{
+    return $this->hasMany(FichaChecklist::class, 'id_cita', 'id_cita');
+}
 }

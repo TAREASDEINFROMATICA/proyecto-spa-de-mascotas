@@ -37,4 +37,9 @@ class Empleado extends Model
 {
     return $this->hasMany(Cita::class, 'id_empleado');
 }
+// Relación con ficha_checklist
+public function fichaChecklist()
+{
+    return $this->hasMany(FichaChecklist::class, 'id_empleado', 'id_empleado');
+}
 }

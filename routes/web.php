@@ -1392,3 +1392,12 @@ Route::post('/admin/dias-no-laborables/{id}/toggle', function ($id) {
     $controller = new \App\Http\Controllers\DiaNoLaborableController();
     return $controller->toggleEstado(request(), $id);
 })->name('admin.dias-no-laborables.toggle');
+
+
+// =========================================================
+// GROOMER - CHECKLIST
+// =========================================================
+Route::get('/groomer/checklist', [App\Http\Controllers\ChecklistController::class, 'index'])->name('groomer.checklist');
+Route::get('/groomer/checklist/{citaId}/items', [App\Http\Controllers\ChecklistController::class, 'getChecklist'])->name('groomer.checklist.items');
+Route::post('/groomer/checklist/{citaId}/guardar', [App\Http\Controllers\ChecklistController::class, 'guardarProgreso'])->name('groomer.checklist.guardar');
+Route::post('/groomer/checklist/{citaId}/completar', [App\Http\Controllers\ChecklistController::class, 'completarChecklist'])->name('groomer.checklist.completar');
