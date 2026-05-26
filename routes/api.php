@@ -33,3 +33,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
    
 });
+// =========================================================
+// RUTAS PARA APP MOVIL FLUTTER
+// =========================================================
+Route::prefix('mobile')->group(function () {
+
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/registro', [RegistroController::class, 'register']);
+    Route::post('/verificar-bloqueo', [AuthController::class, 'verificarBloqueo']);
+    Route::post('/2fa/verificar-login', [AuthController::class, 'verificar2FALogin']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+
+        Route::post('/2fa/generar', [TwoFAController::class, 'generar']);
+        Route::post('/2fa/verificar', [TwoFAController::class, 'verificar']);
+        Route::post('/2fa/desactivar', [TwoFAController::class, 'desactivar']);
+    });
+
+});
