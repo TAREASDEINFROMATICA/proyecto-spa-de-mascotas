@@ -36,4 +36,5 @@ class Venta extends Model
     {
         return $this->hasOne(Comprobante::class, 'id_venta');
     }
+
 }

@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Detalle de Compra #{{ $venta->id_venta }} - Pet Spa</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -22,18 +24,29 @@
         .info-item { margin-bottom: 10px; }
         .info-label { font-weight: 600; color: #666; font-size: 12px; text-transform: uppercase; }
         .info-value { font-size: 16px; color: #333; margin-top: 4px; }
+        
+        /* Estados del pedido */
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .badge-pendiente { background: #f5f5f5; color: #757575; }
+        .badge-confirmado { background: #e3f2fd; color: #1976d2; }
+        .badge-preparando { background: #fff3e0; color: #f57c00; }
+        .badge-listo_para_recoger { background: #e8f5e9; color: #4caf50; }
+        .badge-entregado { background: #f3e5f5; color: #9c27b0; }
+        .badge-cancelado { background: #ffebee; color: #f44336; }
+        
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
         th { background: #e9ecef; padding: 12px; text-align: left; font-weight: 600; }
         td { padding: 12px; border-bottom: 1px solid #dee2e6; }
         .total { text-align: right; font-size: 18px; margin-top: 15px; padding-top: 15px; border-top: 2px solid #e0e0e0; }
         .total span { font-size: 24px; color: #4CAF50; font-weight: 700; }
-        .estado-pagada { background: #e8f5e9; color: #4CAF50; padding: 4px 12px; border-radius: 20px; display: inline-block; font-size: 12px; font-weight: 600; }
         .comprobante { background: #e3f2fd; padding: 15px; border-radius: 12px; text-align: center; margin-top: 20px; }
         .comprobante i { font-size: 40px; color: #2196F3; margin-bottom: 10px; }
         @media (max-width: 768px) { .header { flex-direction: column; text-align: center; } .info-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+    @php $token = request()->query('token'); @endphp
+    
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-receipt"></i> Detalle de Compra #{{ $venta->id_venta }}</h1>
@@ -53,7 +66,7 @@
                 <h3><i class="fas fa-info-circle"></i> Información de la Compra</h3>
                 <div class="info-grid">
                     <div>
-                        <div class="info-label">N° Venta</div>
+                        <div class="info-label">N° Pedido</div>
                         <div class="info-value">#{{ $venta->id_venta }}</div>
                     </div>
                     <div>
@@ -61,8 +74,23 @@
                         <div class="info-value">{{ \Carbon\Carbon::parse($venta->fecha_venta)->format('d/m/Y H:i:s') }}</div>
                     </div>
                     <div>
-                        <div class="info-label">Estado</div>
-                        <div class="info-value"><span class="estado-pagada"><i class="fas fa-check-circle"></i> Pagada</span></div>
+                        <div class="info-label">Estado del Pedido</div>
+                        <div class="info-value">
+                            @php
+                                $estados = [
+                                    'pendiente' => ['texto' => '📋 Pendiente', 'clase' => 'badge-pendiente'],
+                                    'confirmado' => ['texto' => '✅ Confirmado', 'clase' => 'badge-confirmado'],
+                                    'preparando' => ['texto' => '🔧 Preparando', 'clase' => 'badge-preparando'],
+                                    'listo_para_recoger' => ['texto' => '📦 Listo para recoger', 'clase' => 'badge-listo_para_recoger'],
+                                    'entregado' => ['texto' => '🎉 Entregado', 'clase' => 'badge-entregado'],
+                                    'cancelado' => ['texto' => '❌ Cancelado', 'clase' => 'badge-cancelado'],
+                                ];
+                                $estadoInfo = $estados[$venta->estado_pedido] ?? ['texto' => '📋 Pendiente', 'clase' => 'badge-pendiente'];
+                            @endphp
+                            <span class="badge {{ $estadoInfo['clase'] }}">
+                                {{ $estadoInfo['texto'] }}
+                            </span>
+                        </div>
                     </div>
                     <div>
                         <div class="info-label">Comprobante</div>
@@ -74,26 +102,28 @@
             <!-- Productos -->
             <div class="info-card">
                 <h3><i class="fas fa-boxes"></i> Productos</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Precio Unitario</th>
-                            <th>Cantidad</th>
-                            <th>Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($venta->detalles as $detalle)
-                        <tr>
-                            <td>{{ $detalle->producto->nombre }}</td>
-                            <td>Bs {{ number_format($detalle->precio_unitario, 2) }}</td>
-                            <td>{{ $detalle->cantidad }}</td>
-                            <td>Bs {{ number_format($detalle->subtotal, 2) }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Precio Unitario</th>
+                                <th>Cantidad</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($venta->detalles as $detalle)
+                            <tr>
+                                <td>{{ $detalle->producto->nombre }}</td>
+                                <td>Bs {{ number_format($detalle->precio_unitario, 2) }}</td>
+                                <td>{{ $detalle->cantidad }}</td>
+                                <td>Bs {{ number_format($detalle->subtotal, 2) }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
                 <div class="total">
                     TOTAL: <span>Bs {{ number_format($venta->total, 2) }}</span>
                 </div>

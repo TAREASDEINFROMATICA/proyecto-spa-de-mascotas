@@ -164,183 +164,241 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        window.location.href = '/';
+    }
+    
+    // Función para crear enlaces con token
+    function crearEnlace(id, url) {
+        const enlace = document.getElementById(id);
+        if (enlace) {
+            enlace.href = url + '?token=' + token;
+        }
+    }
+    
+    // Función para actualizar contador del carrito
+    function actualizarCarritoCount() {
+        const carrito = localStorage.getItem('carrito');
+        const items = carrito ? JSON.parse(carrito) : [];
+        const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
+        const badge = document.getElementById('carritoCount');
+        if (badge) {
+            badge.textContent = totalItems;
+            badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+        }
+    }
+    
+    // =========================================================
+    // NOTIFICACIONES - CONTADOR
+    // =========================================================
+    function actualizarNotificaciones() {
+        fetch('/notificaciones/count?token=' + token)
+            .then(res => res.json())
+            .then(data => {
+                const badge = document.getElementById('notifCount');
+                if (badge && data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'inline-block';
+                } else if (badge) {
+                    badge.style.display = 'none';
+                }
+            })
+            .catch(err => console.log('Error:', err));
+    }
+    
+    setInterval(actualizarNotificaciones, 30000);
+    actualizarNotificaciones();
+    
+    // =========================================================
+    // CITAS
+    // =========================================================
+    crearEnlace('enlaceSolicitarCita', '/cliente/solicitar-cita');
+    crearEnlace('enlaceMisCitas', '/cliente/mis-citas');
+    crearEnlace('enlaceHistorialServicios', '/cliente/mis-citas');
+    
+    // =========================================================
+    // MASCOTAS
+    // =========================================================
+    crearEnlace('enlaceMascotas', '/cliente/mascotas');
+    crearEnlace('enlaceRegistrarMascota', '/cliente/mascotas/create');
+    
+    // =========================================================
+    // CALIFICACIONES
+    // =========================================================
+    crearEnlace('enlaceCalificar', '/cliente/mis-citas');
+    
+    // =========================================================
+    // TIENDA
+    // =========================================================
+    crearEnlace('enlaceTienda', '/cliente/tienda');
+    crearEnlace('enlaceCarrito', '/cliente/carrito');
+    crearEnlace('enlaceMisCompras', '/cliente/mis-compras');
+    
+    // =========================================================
+    // MI CUENTA
+    // =========================================================
+    crearEnlace('enlacePerfil', '/cliente/perfil');
+    crearEnlace('enlaceCambiarPassword', '/cliente/perfil');
+    
+    // =========================================================
+    // NOTIFICACIONES
+    // =========================================================
+    crearEnlace('enlaceNotificaciones', '/mis-notificaciones');
+    
+    // Actualizar contador del carrito
+    actualizarCarritoCount();
+    
+    // Escuchar cambios en localStorage
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'carrito') {
+            actualizarCarritoCount();
+        }
+    });
+    
+    // =========================================================
+    // MODAL CAMBIAR CONTRASEÑA
+    // =========================================================
+    function togglePassword(id) {
+        const input = document.getElementById(id);
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function checkPasswordStrength(password) {
+        const checks = {
+            length: password.length >= 8,
+            upper: /[A-Z]/.test(password),
+            lower: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            symbol: /[@$!%*#?&]/.test(password)
+        };
+        document.getElementById('req-length').innerHTML = (checks.length ? '✅' : '❌') + ' Mínimo 8 caracteres';
+        document.getElementById('req-upper').innerHTML = (checks.upper ? '✅' : '❌') + ' Al menos una mayúscula';
+        document.getElementById('req-lower').innerHTML = (checks.lower ? '✅' : '❌') + ' Al menos una minúscula';
+        document.getElementById('req-number').innerHTML = (checks.number ? '✅' : '❌') + ' Al menos un número';
+        document.getElementById('req-symbol').innerHTML = (checks.symbol ? '✅' : '❌') + ' Al menos un símbolo';
         
-        if (!token) {
+        let strength = 0;
+        if (checks.length) strength++;
+        if (checks.upper && checks.lower) strength++;
+        if (checks.number) strength++;
+        if (checks.symbol) strength++;
+        
+        const fill = document.getElementById('strengthFill');
+        const text = document.getElementById('strengthText');
+        fill.style.width = (strength * 25) + '%';
+        if (strength <= 2) {
+            fill.className = 'strength-meter-fill weak';
+            text.innerHTML = '🔴 Contraseña débil';
+        } else if (strength === 3) {
+            fill.className = 'strength-meter-fill medium';
+            text.innerHTML = '🟡 Contraseña media';
+        } else {
+            fill.className = 'strength-meter-fill strong';
+            text.innerHTML = '🟢 Contraseña fuerte';
+        }
+        return checks.length && checks.upper && checks.lower && checks.number && checks.symbol;
+    }
+    
+    document.getElementById('contrasena_nueva').addEventListener('input', function() {
+        checkPasswordStrength(this.value);
+    });
+
+    function abrirModal() { 
+        document.getElementById('modalPassword').style.display = 'flex'; 
+    }
+    
+    function cerrarModal() { 
+        document.getElementById('modalPassword').style.display = 'none';
+        document.getElementById('cambiarPasswordForm').reset();
+        document.getElementById('passwordResultado').innerHTML = '';
+        document.getElementById('strengthFill').style.width = '0%';
+        document.getElementById('strengthText').innerHTML = '';
+        document.querySelectorAll('.requirement').forEach(r => {
+            r.classList.remove('valid');
+            r.classList.add('invalid');
+            r.innerHTML = r.innerHTML.replace('✅', '❌');
+        });
+    }
+    
+    // Cargar datos del usuario
+    fetch('/api/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.user) {
+            document.getElementById('userName').innerHTML = `👋 Bienvenido, ${data.user.nombres} ${data.user.apellidos}`;
+            document.getElementById('userEmail').innerHTML = `📧 ${data.user.correo}`;
+        } else {
+            document.querySelector('.info-card').innerHTML = '<span style="color: red;">❌ Error al cargar datos</span>';
+        }
+    })
+    .catch(() => {
+        window.location.href = '/';
+    });
+
+    function logout() {
+        fetch('/api/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        }).finally(() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('carrito');
             window.location.href = '/';
+        });
+    }
+    
+    // Cambiar contraseña
+    $('#cambiarPasswordForm').on('submit', function(e) {
+        e.preventDefault();
+        const nueva = $('#contrasena_nueva').val();
+        const conf = $('#contrasena_nueva_confirmation').val();
+        if (!checkPasswordStrength(nueva)) {
+            $('#passwordResultado').html('<div class="mensaje-error">❌ Contraseña no cumple requisitos</div>');
+            return;
         }
-        
-        // Función para crear enlaces con token
-        function crearEnlace(id, url) {
-            const enlace = document.getElementById(id);
-            if (enlace) {
-                enlace.href = url + '?token=' + token;
-            }
+        if (nueva !== conf) {
+            $('#passwordResultado').html('<div class="mensaje-error">❌ Las contraseñas no coinciden</div>');
+            return;
         }
-        
-        // Función para actualizar contador del carrito
-        function actualizarCarritoCount() {
-            const carrito = localStorage.getItem('carrito');
-            const items = carrito ? JSON.parse(carrito) : [];
-            const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
-            const badge = document.getElementById('carritoCount');
-            if (badge) {
-                badge.textContent = totalItems;
-                badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
-            }
-        }
-        
-        // =========================================================
-        // NOTIFICACIONES - CONTADOR
-        // =========================================================
-        function actualizarNotificaciones() {
-            fetch('/notificaciones/count?token=' + token)
-                .then(res => res.json())
-                .then(data => {
-                    const badge = document.getElementById('notifCount');
-                    if (badge && data.count > 0) {
-                        badge.textContent = data.count;
-                        badge.style.display = 'inline-block';
-                    } else if (badge) {
-                        badge.style.display = 'none';
-                    }
-                })
-                .catch(err => console.log('Error:', err));
-        }
-        
-        setInterval(actualizarNotificaciones, 30000);
-        actualizarNotificaciones();
-        
-        // =========================================================
-        // CITAS
-        // =========================================================
-        crearEnlace('enlaceSolicitarCita', '/cliente/solicitar-cita');
-        crearEnlace('enlaceMisCitas', '/cliente/mis-citas');
-        crearEnlace('enlaceHistorialServicios', '/cliente/mis-citas');
-        
-        // =========================================================
-        // MASCOTAS
-        // =========================================================
-        crearEnlace('enlaceMascotas', '/cliente/mascotas');
-        crearEnlace('enlaceRegistrarMascota', '/cliente/mascotas/create');
-        
-        // =========================================================
-        // CALIFICACIONES
-        // =========================================================
-        crearEnlace('enlaceCalificar', '/cliente/mis-citas');
-        
-        // =========================================================
-        // TIENDA
-        // =========================================================
-        crearEnlace('enlaceTienda', '/cliente/tienda');
-        crearEnlace('enlaceCarrito', '/cliente/carrito');
-        crearEnlace('enlaceMisCompras', '/cliente/mis-compras');
-        
-        // =========================================================
-        // MI CUENTA
-        // =========================================================
-        crearEnlace('enlacePerfil', '/cliente/perfil');
-        crearEnlace('enlaceCambiarPassword', '/cliente/perfil');
-        
-        // =========================================================
-        // NOTIFICACIONES
-        // =========================================================
-        crearEnlace('enlaceNotificaciones', '/mis-notificaciones');
-        
-        // Actualizar contador del carrito
-        actualizarCarritoCount();
-        
-        // Escuchar cambios en localStorage
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'carrito') {
-                actualizarCarritoCount();
+        $.ajax({
+            url: '/cambiar-contrasena',
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            data: JSON.stringify({
+                contrasena_actual: $('#contrasena_actual').val(),
+                contrasena_nueva: nueva,
+                contrasena_nueva_confirmation: conf
+            }),
+            success: function(res) {
+                $('#passwordResultado').html('<div class="mensaje-exito">✅ ' + res.message + '</div>');
+                setTimeout(cerrarModal, 2000);
+            },
+            error: function(xhr) {
+                $('#passwordResultado').html('<div class="mensaje-error">❌ ' + (xhr.responseJSON?.message || 'Error') + '</div>');
             }
         });
-        
-        // =========================================================
-        // MODAL CAMBIAR CONTRASEÑA
-        // =========================================================
-        function togglePassword(id) {
-            const input = document.getElementById(id);
-            input.type = input.type === 'password' ? 'text' : 'password';
-        }
-
-        function checkPasswordStrength(password) {
-            const checks = {
-                length: password.length >= 8,
-                upper: /[A-Z]/.test(password),
-                lower: /[a-z]/.test(password),
-                number: /[0-9]/.test(password),
-                symbol: /[@$!%*#?&]/.test(password)
-            };
-            document.getElementById('req-length').innerHTML = (checks.length ? '✅' : '❌') + ' Mínimo 8 caracteres';
-            document.getElementById('req-upper').innerHTML = (checks.upper ? '✅' : '❌') + ' Al menos una mayúscula';
-            document.getElementById('req-lower').innerHTML = (checks.lower ? '✅' : '❌') + ' Al menos una minúscula';
-            document.getElementById('req-number').innerHTML = (checks.number ? '✅' : '❌') + ' Al menos un número';
-            document.getElementById('req-symbol').innerHTML = (checks.symbol ? '✅' : '❌') + ' Al menos un símbolo';
-            
-            let strength = 0;
-            if (checks.length) strength++;
-            if (checks.upper && checks.lower) strength++;
-            if (checks.number) strength++;
-            if (checks.symbol) strength++;
-            
-            const fill = document.getElementById('strengthFill');
-            const text = document.getElementById('strengthText');
-            fill.style.width = (strength * 25) + '%';
-            if (strength <= 2) {
-                fill.className = 'strength-meter-fill weak';
-                text.innerHTML = '🔴 Contraseña débil';
-            } else if (strength === 3) {
-                fill.className = 'strength-meter-fill medium';
-                text.innerHTML = '🟡 Contraseña media';
-            } else {
-                fill.className = 'strength-meter-fill strong';
-                text.innerHTML = '🟢 Contraseña fuerte';
-            }
-            return checks.length && checks.upper && checks.lower && checks.number && checks.symbol;
-        }
-        
-        document.getElementById('contrasena_nueva').addEventListener('input', function() {
-            checkPasswordStrength(this.value);
-        });
-
-        function abrirModal() { document.getElementById('modalPassword').style.display = 'flex'; }
-        function cerrarModal() { 
-            document.getElementById('modalPassword').style.display = 'none';
-            document.getElementById('cambiarPasswordForm').reset();
-            document.getElementById('passwordResultado').innerHTML = '';
-            document.getElementById('strengthFill').style.width = '0%';
-            document.getElementById('strengthText').innerHTML = '';
-            document.querySelectorAll('.requirement').forEach(r => {
-                r.classList.remove('valid');
-                r.classList.add('invalid');
-                r.innerHTML = r.innerHTML.replace('✅', '❌');
-            });
-        }
-        
-        // Cargar datos del usuario
-        fetch('/api/me', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.user) {
-                document.getElementById('userName').innerHTML = `👋 Bienvenido, ${data.user.nombres} ${data.user.apellidos}`;
-                document.getElementById('userEmail').innerHTML = `📧 ${data.user.correo}`;
-            } else {
-                document.querySelector('.info-card').innerHTML = '<span style="color: red;">❌ Error al cargar datos</span>';
-            }
-        })
-        .catch(() => {
-            window.location.href = '/';
-        });
-
-        function logout() {
+    });
+    
+    // =========================================================
+    // SESIÓN POR INACTIVIDAD
+    // =========================================================
+    let tiempoInactividad;
+    const TIEMPO_LIMITE = 30 * 60 * 1000; // 30 minutos
+    
+    function cerrarSesionPorInactividad() {
+        const tokenActual = localStorage.getItem('token');
+        if (tokenActual) {
             fetch('/api/logout', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + token,
+                    'Authorization': 'Bearer ' + tokenActual,
                     'Content-Type': 'application/json'
                 }
             }).finally(() => {
@@ -349,82 +407,27 @@
                 localStorage.removeItem('carrito');
                 window.location.href = '/';
             });
+        } else {
+            window.location.href = '/';
         }
-        
-        // Cambiar contraseña
-        $('#cambiarPasswordForm').on('submit', function(e) {
-            e.preventDefault();
-            const nueva = $('#contrasena_nueva').val();
-            const conf = $('#contrasena_nueva_confirmation').val();
-            if (!checkPasswordStrength(nueva)) {
-                $('#passwordResultado').html('<div class="mensaje-error">❌ Contraseña no cumple requisitos</div>');
-                return;
-            }
-            if (nueva !== conf) {
-                $('#passwordResultado').html('<div class="mensaje-error">❌ Las contraseñas no coinciden</div>');
-                return;
-            }
-            $.ajax({
-                url: '/cambiar-contrasena',
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                data: JSON.stringify({
-                    contrasena_actual: $('#contrasena_actual').val(),
-                    contrasena_nueva: nueva,
-                    contrasena_nueva_confirmation: conf
-                }),
-                success: function(res) {
-                    $('#passwordResultado').html('<div class="mensaje-exito">✅ ' + res.message + '</div>');
-                    setTimeout(cerrarModal, 2000);
-                },
-                error: function(xhr) {
-                    $('#passwordResultado').html('<div class="mensaje-error">❌ ' + (xhr.responseJSON?.message || 'Error') + '</div>');
-                }
-            });
-        });
-        
-        // =========================================================
-        // SESIÓN POR INACTIVIDAD
-        // =========================================================
-        let tiempoInactividad;
-        const TIEMPO_LIMITE = 30 * 60 * 1000; // 30 minutos
-        
-        function cerrarSesionPorInactividad() {
-            const tokenActual = localStorage.getItem('token');
-            if (tokenActual) {
-                fetch('/api/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + tokenActual,
-                        'Content-Type': 'application/json'
-                    }
-                }).finally(() => {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('carrito');
-                    window.location.href = '/';
-                });
-            } else {
-                window.location.href = '/';
-            }
-        }
-        
-        function reiniciarTiempo() {
-            clearTimeout(tiempoInactividad);
-            tiempoInactividad = setTimeout(cerrarSesionPorInactividad, TIEMPO_LIMITE);
-        }
-        
-        window.onload = reiniciarTiempo;
-        document.onmousemove = reiniciarTiempo;
-        document.onkeydown = reiniciarTiempo;
-        document.onclick = reiniciarTiempo;
-        document.onscroll = reiniciarTiempo;
-        
-        // Cerrar modal al hacer clic fuera
-        window.onclick = function(event) {
-            const modal = document.getElementById('modalPassword');
-            if (event.target == modal) cerrarModal();
-        }
-    </script>
+    }
+    
+    function reiniciarTiempo() {
+        clearTimeout(tiempoInactividad);
+        tiempoInactividad = setTimeout(cerrarSesionPorInactividad, TIEMPO_LIMITE);
+    }
+    
+    window.onload = reiniciarTiempo;
+    document.onmousemove = reiniciarTiempo;
+    document.onkeydown = reiniciarTiempo;
+    document.onclick = reiniciarTiempo;
+    document.onscroll = reiniciarTiempo;
+    
+    // Cerrar modal al hacer clic fuera
+    window.onclick = function(event) {
+        const modal = document.getElementById('modalPassword');
+        if (event.target == modal) cerrarModal();
+    }
+</script>
 </body>
 </html>

@@ -244,12 +244,24 @@
             .acciones { flex-direction: column; }
             .btn { justify-content: center; }
         }
+        .btn-whatsapp {
+    background: #25D366;
+    color: white;
+}
+.btn-whatsapp:hover {
+    background: #128C7E;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37,211,102,0.3);
+}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-shopping-cart"></i> Mi Carrito</h1>
+            <button class="btn btn-whatsapp" onclick="enviarPedidoWhatsApp()">
+    <i class="fab fa-whatsapp"></i> Enviar pedido por WhatsApp
+</button>
             <a href="/cliente/tienda?token={{ $token }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Seguir Comprando
             </a>
@@ -525,19 +537,83 @@
                     </div>
                 </div>
                 <div class="acciones">
-                    <button class="btn btn-danger" onclick="vaciarCarrito()">
-                        <i class="fas fa-trash-alt"></i> Vaciar Carrito
-                    </button>
-                    <button class="btn btn-success" onclick="comprarAhora()">
-                        <i class="fas fa-credit-card"></i> Confirmar Compra
-                    </button>
-                </div>
+    <button class="btn btn-danger" onclick="vaciarCarrito()">
+        <i class="fas fa-trash-alt"></i> Vaciar Carrito
+    </button>
+    <button class="btn btn-success" onclick="comprarAhora()">
+        <i class="fas fa-credit-card"></i> Confirmar Compra
+    </button>
+    <button class="btn btn-whatsapp" onclick="enviarPedidoWhatsApp()">
+        <i class="fab fa-whatsapp"></i> Enviar pedido por WhatsApp
+    </button>
+</div>
             `;
             
             container.innerHTML = html;
         }
-        
+        function enviarPedidoWhatsApp() {
+    const carrito = getCarrito();
+    
+    if (carrito.length === 0) {
+        alert('❌ No hay productos en el carrito');
+        return;
+    }
+    
+    // Obtener datos del cliente (desde el DOM o variables)
+    let clienteNombre = '';
+    let clienteTelefono = '';
+    
+    // Si tienes datos del cliente en la página, puedes obtenerlos
+    if (document.getElementById('userName')) {
+        clienteNombre = document.getElementById('userName')?.innerText || '';
+    }
+    
+    let mensaje = "🛍️ *NUEVO PEDIDO - PET SPA*\n\n";
+    mensaje += "📅 Fecha: " + new Date().toLocaleString() + "\n";
+    mensaje += "━".repeat(30) + "\n\n";
+    mensaje += "*PRODUCTOS:*\n";
+    
+    let total = 0;
+    
+    carrito.forEach(item => {
+        const subtotal = item.precio * item.cantidad;
+        mensaje += `✓ ${item.nombre} x${item.cantidad} = Bs ${subtotal.toFixed(2)}\n`;
+        total += subtotal;
+    });
+    
+    mensaje += "\n" + "━".repeat(30) + "\n";
+    mensaje += `💰 *TOTAL: Bs ${total.toFixed(2)}*\n\n`;
+    mensaje += "📦 *Método de pago:* " + getMetodoPagoTexto() + "\n";
+    mensaje += "🚚 *Recoger en tienda*\n\n";
+    mensaje += "📍 Dirección: Calle Principal #123, Ciudad\n";
+    mensaje += "🕐 Horario: Lun-Sáb 9:00-18:00\n";
+    mensaje += "📞 Contacto: (591) 2-123456\n\n";
+    mensaje += "¡Gracias por tu compra! 🐾";
+    
+    // NÚMERO DE WHATSAPP DEL NEGOCIO (cambia esto)
+    let numeroWhatsapp = "59168101911"; // ← PON AQUÍ TU NÚMERO
+    
+    let url = "https://wa.me/" + numeroWhatsapp + "?text=" + encodeURIComponent(mensaje);
+    window.open(url, '_blank');
+}
+
+function getMetodoPagoTexto() {
+    const metodoSelect = document.getElementById('metodoPago');
+    if (!metodoSelect) return 'Por definir';
+    
+    const metodo = metodoSelect.value;
+    switch(metodo) {
+        case '1': return '💵 Efectivo';
+        case '2': return '🏦 Transferencia Bancaria';
+        case '3': return '📱 Código QR';
+        case '4': return '💳 Tarjeta';
+        default: return 'Por definir';
+    }
+}
+
+
         renderizarCarrito();
+
     </script>
 </body>
 </html>

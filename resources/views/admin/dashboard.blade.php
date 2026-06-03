@@ -161,6 +161,7 @@
             <div class="menu-grid">
                 <div class="menu-item"><a href="#" id="enlaceReportes"><i class="fas fa-file-alt"></i> Reportes financieros</a></div>
                 <div class="menu-item"><a href="#" id="enlaceVentas"><i class="fas fa-shopping-cart"></i> Gestión de Ventas</a></div>
+                <div class="menu-item"><a href="#" id="enlacePedidos"><i class="fas fa-box"></i> Gestión de Pedidos</a></div>
             </div>
             
             <h2><i class="fas fa-boxes"></i> Inventario</h2>
@@ -276,6 +277,7 @@
         // =========================================================
         crearEnlace('enlaceReportes', '/admin/reportes-financieros');
         crearEnlace('enlaceVentas', '/admin/ventas');
+        crearEnlace('enlacePedidos', '/admin/pedidos');
         
         // =========================================================
         // INVENTARIO

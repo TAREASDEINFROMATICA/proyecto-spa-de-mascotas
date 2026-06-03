@@ -11,9 +11,10 @@ use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-
+use App\Mail\PedidoListoRecogerMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
-
+use App\Http\Controllers\NotificacionController;
 
 class ClienteTiendaController extends Controller
 {
@@ -385,4 +386,79 @@ class ClienteTiendaController extends Controller
         session()->forget('carrito');
         setcookie('carrito', '', time() - 3600, "/");
     }
+    // Marcar pedido como "Listo para recoger" (Admin)
+public function marcarListoRecoger(Request $request, $id)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Administrador') {
+        return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+    }
+    
+    $venta = Venta::with(['cliente.usuario'])->findOrFail($id);
+    
+    $venta->estado_pedido = 'listo_para_recoger';
+    $venta->fecha_listo_para_recoger = now();
+    $venta->save();
+    
+    // ✅ ENVIAR EMAIL
+    // ✅ ENVIAR EMAIL
+try {
+    Mail::to($venta->cliente->usuario->correo)->send(new PedidoListoRecogerMail($venta));
+    // ✅ NOTIFICACIÓN EN SISTEMA
+    NotificacionController::crear(
+        $venta->cliente->id_usuario,
+        'pedido_listo',
+        "📦 ¡Tu pedido #{$venta->id_venta} ya está listo para recoger!"
+    );
+    Log::info("Notificación de pedido listo enviada a: " . $venta->cliente->usuario->correo);
+} catch (\Exception $e) {
+    Log::error("Error enviando email: " . $e->getMessage());
+}
+    
+    
+    return response()->json([
+        'success' => true, 
+        'message' => 'Pedido marcado como listo para recoger. Cliente notificado.'
+    ]);
+}
+// Actualizar estado del pedido (Admin)
+public function actualizarEstadoPedido(Request $request, $id)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Administrador') {
+        return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+    }
+    
+    $request->validate([
+        'estado_pedido' => 'required|in:pendiente,confirmado,preparando,listo_para_recoger,entregado,cancelado'
+    ]);
+    
+    $venta = Venta::findOrFail($id);
+    $venta->estado_pedido = $request->estado_pedido;
+    $venta->save();
+    
+    return response()->json(['success' => true, 'message' => 'Estado actualizado']);
+}
+
+// Vista de pedidos para Admin
+public function adminPedidos(Request $request)
+{
+    $user = $this->getUserFromToken($request);
+    if (!$user || $user->rol->nombre !== 'Administrador') {
+        return redirect('/');
+    }
+    
+    $estado = $request->query('estado');
+    $query = Venta::with(['cliente.usuario', 'detalles.producto']);
+    
+    if ($estado) {
+        $query->where('estado_pedido', $estado);
+    }
+    
+    // ✅ CORREGIDO: usar fecha_venta en lugar de created_at
+    $ventas = $query->orderBy('fecha_venta', 'desc')->paginate(20);
+    $token = $request->query('token');
+    
+    return view('admin.ventas.pedidos', compact('ventas', 'token', 'estado'));
+}
 }

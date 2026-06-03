@@ -1401,3 +1401,10 @@ Route::get('/groomer/checklist', [App\Http\Controllers\ChecklistController::clas
 Route::get('/groomer/checklist/{citaId}/items', [App\Http\Controllers\ChecklistController::class, 'getChecklist'])->name('groomer.checklist.items');
 Route::post('/groomer/checklist/{citaId}/guardar', [App\Http\Controllers\ChecklistController::class, 'guardarProgreso'])->name('groomer.checklist.guardar');
 Route::post('/groomer/checklist/{citaId}/completar', [App\Http\Controllers\ChecklistController::class, 'completarChecklist'])->name('groomer.checklist.completar');
+
+
+// Admin - Gestión de pedidos
+Route::get('/admin/pedidos', [App\Http\Controllers\ClienteTiendaController::class, 'adminPedidos'])->name('admin.pedidos');
+Route::get('/admin/pedidos/{estado}', [App\Http\Controllers\ClienteTiendaController::class, 'adminPedidos'])->name('admin.pedidos.estado');
+Route::post('/admin/ventas/{id}/listo-recoger', [App\Http\Controllers\ClienteTiendaController::class, 'marcarListoRecoger'])->name('admin.ventas.listo-recoger');
+Route::put('/admin/ventas/{id}/estado-pedido', [App\Http\Controllers\ClienteTiendaController::class, 'actualizarEstadoPedido'])->name('admin.ventas.estado');
